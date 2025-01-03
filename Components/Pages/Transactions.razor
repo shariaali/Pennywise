@@ -1,0 +1,66 @@
+﻿@page "/transactions"
+@using Pennywise.Model;
+@using Pennywise.Services.Interfaces;
+@inject NavigationManager Nav
+@inject ITransactionService TransactionService
+
+<h3>Transactions</h3>
+
+<div class="table-container">
+    <table class="transactions-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Amount</th>
+                <th>Type</th>
+                <th>Date</th>
+                <th>Tags</th>
+                <th>Note</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (transactions == null || transactions.Count == 0)
+            {
+                <tr>
+                    <td colspan="7">No transactions available</td>
+                </tr>
+            }
+            else
+            {
+                @foreach (var transaction in transactions)
+                {
+                    <tr>
+                        <td>@transaction.TransactionId</td>
+                        <td>@transaction.Title</td>
+                        <td>@transaction.Amount</td>
+                        <td>@transaction.Type</td>
+                        <td>@transaction.Date.ToString("yyyy-MM-dd")</td>
+                        <td>@transaction.Tags</td>
+                        <td>@transaction.Note</td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>
+
+@code{
+    private List<Transaction> transactions = new List<Transaction>();
+    private readonly TransactionService transactionService = new TransactionService();
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Get all transactions from the service
+        try
+        {
+            // Load transactions from the CSV file
+            transactions = await transactionService.LoadTransactionsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading transactions: {ex.Message}");
+        }
+
+    }
+}

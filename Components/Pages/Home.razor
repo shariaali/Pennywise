@@ -1,0 +1,178 @@
+﻿@page "/home"
+@using Pennywise.Model
+@using Pennywise.Services
+@using Pennywise.Services.Interfaces
+@inject NavigationManager Nav
+@inject IUserService UserService
+
+<!-- Logout Button -->
+@*<button class="btn btn-lg btn-secondary" @onclick="ShowLogoutConfirmation" style="position: fixed; top: 20px; right: 20px;">
+    Logout
+</button>*@
+
+<MudContainer Class="mt-8 px-4" MaxWidth="MaxWidth.False">
+    <MudText Typo="Typo.h3">Welcome, @_loggedInUsername</MudText>
+    @*Cards Section*@
+    <MudGrid>
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
+                <MudText>Total Cash Inflows</MudText>
+                <MudText Typo="Typo.body2" Style="color: darkgreen;">$5000</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
+                <MudText>Total Cash Outflows</MudText>
+                <MudText Typo="Typo.body2" Style="color: red;">$6000</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="12" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
+                <MudText>Remaining Balance</MudText>
+                <MudText Typo="Typo.body2" Style="color: blue;">$10000</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
+                <MudText>Remaining Debts</MudText>
+                <MudText Typo="Typo.body2" Style="color: yellow;">$1000</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
+                <MudText>Cleared Debts</MudText>
+                <MudText Typo="Typo.body2" Style="color: green;">$100</MudText>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="12" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
+                <MudText>Total Debts</MudText>
+                <MudText Typo="Typo.body2" Style="color: gray;">$0</MudText>
+            </MudPaper>
+        </MudItem>
+        @*Cards Section*@
+
+        @*Charts Section*@
+        <MudItem xs="12" sm="6">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 500px;">
+                @*Line Chart Section*@
+                <div>
+                    <MudChart ChartType="ChartType.Line" ChartSeries="@Series" @bind-SelectedIndex="Index" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" ChartOptions="@Options" />
+                </div>
+                @*Line Chart Section*@
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="6">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 500px;">
+                @*Bar Chart Section*@
+                <div>
+                    <MudChart ChartType="ChartType.Bar" ChartSeries="@Series" @bind-SelectedIndex="Index" XAxisLabels="@XAxisLabels" Width="100%" Height="350px"></MudChart>
+                </div>
+                @*Bar Chart Section*@
+            </MudPaper>
+        </MudItem>
+        @*Charts Section*@
+
+        @*Tables Section*@
+        <MudItem xs="12" sm="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                <MudText Typo="Typo.h6">Top 5 Highest Transactions</MudText>
+                <MudTable Items="@_elements.Take(4)" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <HeaderContent>
+                        <MudTh>Date</MudTh>
+                        <MudTh>Amount</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Date">@context.Date</MudTd>
+                        <MudTd DataLabel="Amount">@context.Amount</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="4" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                <MudText Typo="Typo.h6">Top 5 Lowest Transactions</MudText>
+                <MudTable Items="@_elements.Take(4)" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <HeaderContent>
+                        <MudTh>Date</MudTh>
+                        <MudTh>Amount</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Date">@context.Date</MudTd>
+                        <MudTd DataLabel="Amount">@context.Amount</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+        <MudItem xs="12" sm="4" md="4">
+            <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
+                <MudText Typo="Typo.h6">Pending Debts</MudText>
+                <MudTable Items="@_elements.Take(4)" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+                    <HeaderContent>
+                        <MudTh>Date</MudTh>
+                        <MudTh>Amount</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="Date">@context.Date</MudTd>
+                        <MudTd DataLabel="Amount">@context.Amount</MudTd>
+                    </RowTemplate>
+                </MudTable>
+            </MudPaper>
+        </MudItem>
+        @*Tables Section*@
+    </MudGrid>
+
+</MudContainer>
+
+@code {
+    private int Index = -1; //default value cannot be 0 -> first selectedindex is 0.
+    public ChartOptions Options = new ChartOptions();
+
+    public List<ChartSeries> Series = new List<ChartSeries>()
+    {
+        new ChartSeries() { Name = "Income", Data = new double[] { 90, 79, 72, 69, 62, 62, 55, 65, 70 } },
+        new ChartSeries() { Name = "Expense", Data = new double[] { 10, 41, 35, 51, 49, 62, 69, 91, 148 } },
+    };
+    public string[] XAxisLabels = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep" };
+
+    private bool _hidePosition;
+    private bool _loading;
+
+   
+   private IEnumerable<Transaction> _elements = new List<Transaction>
+    {
+        new Transaction { Date = new DateTime(2024, 8, 1), Amount = 500 },
+        new Transaction { Date = new DateTime(2024, 8, 2), Amount = 1500 },
+        new Transaction { Date = new DateTime(2024, 8, 3), Amount = 2500 },
+        new Transaction { Date = new DateTime(2024, 8, 4), Amount = 3500 },
+
+    };
+
+    private string _loggedInUsername = string.Empty;
+
+    private string _message = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        if (UserService.IsLoggedIn)
+        {
+            _loggedInUsername = UserService.LoggedInUser;
+            _message = $"Welcome, {_loggedInUsername}!";
+        }
+
+        // Display a welcome message for the single user
+        _message = "You are not logged in.";
+        /* var transactions = await transactionService.LoadTransactionsAsync();
+         var sums = transactionService.CalculateTransactionSums(transactions);
+         _totalInflows = sums.totalInflows;
+         _totalOutflows = sums.totalOutflows;
+         _totalDebt = sums.totalDebt;
+         _totalClearedDebt = sums.totalClearedDebt;
+         _remainingDebt = sums.remainingDebt;
+         _balance = sums.balance;*/
+
+    }
+
+
+}

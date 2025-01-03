@@ -1,0 +1,78 @@
+﻿@page "/addtransaction"
+@using Pennywise.Services.Interfaces;
+@using Pennywise.Model;
+@using Pennywise.Services;
+@inject NavigationManager Nav
+@inject ITransactionService TransactionService
+<h3>Add New Transaction</h3>
+
+<div class="form-container">
+    <form class="transaction-form">
+        <div class="form-group">
+            <label for="title">Title:</label>
+            <input id="title" type="text" @bind="newTransaction.Title" />
+        </div>
+
+        <div class="form-group">
+            <label for="amount">Amount:</label>
+            <input id="amount" type="number" step="0.01" @bind="newTransaction.Amount" />
+        </div>
+
+        <div class="form-group">
+            <label for="type">Type:</label>
+            <select id="type" @bind="newTransaction.Type">
+                <option value="Credit">Credit</option>
+                <option value="Debit">Debit</option>
+                <option value="Debt">Debt</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="date">Date:</label>
+            <input id="date" type="date" @bind="newTransaction.Date" />
+        </div>
+
+        <div class="form-group">
+            <label for="tags">Tags:</label>
+            <input id="tags" type="text" @bind="newTransaction.Tags" placeholder="e.g., groceries, bills, rent" />
+        </div>
+
+        <div class="form-group">
+            <label for="note">Notes:</label>
+            <textarea id="note" @bind="newTransaction.Note" rows="4" placeholder="Add any additional notes here..."></textarea>
+        </div>
+
+        <div class="form-actions">
+            <button type="button" @onclick="AddNewTransaction">Add Transaction</button>
+        </div>
+    </form>
+</div>
+
+@code{
+    private Transaction newTransaction = new Transaction();
+    private readonly TransactionService transactionService = new TransactionService();
+
+    private string errorMessage;
+
+    private async Task AddNewTransaction()
+    {
+        try
+        {
+            var existingTransactions = await transactionService.LoadTransactionsAsync();
+            int nextTransactionId = existingTransactions.Count > 0
+                ? existingTransactions.Max(t => t.TransactionId) + 1
+                : 1; // Start with 1 if no transactions exist
+
+            // Set the TransactionId dynamically
+            newTransaction.TransactionId = nextTransactionId;
+            await TransactionService.SaveTransactionAsync(newTransaction);
+            newTransaction = new Transaction(); // Reset the form
+
+            Nav.NavigateTo("/transactions");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred while adding the transaction: {ex.Message}";
+        }
+    }
+}
