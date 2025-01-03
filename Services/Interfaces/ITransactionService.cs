@@ -11,4 +11,5 @@ public interface ITransactionService
 {
     Task SaveTransactionAsync(Transaction transaction);
     Task<List<Transaction>> LoadTransactionsAsync();
+    Task DeleteTransactionAsync(int transactionId);  // Add this method
 }

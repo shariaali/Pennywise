@@ -18,27 +18,38 @@ public class TransactionService : ITransactionService
     {
         try
         {
-            // Check if the file exists
-            bool fileExists = File.Exists(_transactionsFilePath);
+            // Load all transactions from the file
+            var transactions = await LoadTransactionsAsync();
 
-            // Open the file for appending
-            using (var writer = new StreamWriter(_transactionsFilePath, append: true))
+            // Find and update the transaction in the list
+            var existingTransaction = transactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
+            if (existingTransaction != null)
             {
-                if (!fileExists)
+                existingTransaction.Title = transaction.Title;
+                existingTransaction.Amount = transaction.Amount;
+                existingTransaction.Type = transaction.Type;
+                existingTransaction.Date = transaction.Date;
+                existingTransaction.Tags = transaction.Tags;
+                existingTransaction.Note = transaction.Note;
+            }
+            else
+            {
+                // If the transaction doesn't exist, it's a new one, so add it
+                transactions.Add(transaction);
+            }
+
+            // Rewrite the updated transactions list to the file
+            using (var writer = new StreamWriter(_transactionsFilePath, append: false))
+            {
+                // Write the header
+                await writer.WriteLineAsync("TransactionId,Title,Amount,Type,Date,Tags,Note");
+                foreach (var trans in transactions)
                 {
-                    // Write the header if the file is newly created
-                    await writer.WriteLineAsync("TransactionId, Title, Amount, Type, Date, Tags, Note");
+                    string formattedDate = trans.Date.ToString("yyyy-MM-dd");
+                    string csvRow = $"{trans.TransactionId},{trans.Title}," +
+                                    $"{trans.Amount},{trans.Type},{formattedDate},{trans.Tags},{trans.Note}";
+                    await writer.WriteLineAsync(csvRow);
                 }
-                if (string.IsNullOrEmpty(transaction.Type))
-                {
-                    transaction.Type = "Credit"; // Default to "Credit" if not set
-                }
-                // Format the Date to yyyy-MM-dd
-                string formattedDate = transaction.Date.ToString("yyyy-MM-dd");
-                // Write the transaction as a CSV row
-                string csvRow = $"{transaction.TransactionId},{transaction.Title}," +
-                                $"{transaction.Amount},{transaction.Type},{formattedDate}, {transaction.Tags}, {transaction.Note}";
-                await writer.WriteLineAsync(csvRow);
             }
         }
         catch (Exception ex)
@@ -47,6 +58,7 @@ public class TransactionService : ITransactionService
             throw;
         }
     }
+
 
     public async Task<List<Transaction>> LoadTransactionsAsync()
     {
@@ -135,4 +147,43 @@ public class TransactionService : ITransactionService
 
         return (highestInflow, lowestInflow, highestOutflow, lowestOutflow, highestDebt, lowestDebt);
     }
+
+    public async Task DeleteTransactionAsync(int transactionId)
+    {
+        try
+        {
+            var transactions = await LoadTransactionsAsync();
+
+            // Find the transaction to delete
+            var transactionToDelete = transactions.FirstOrDefault(t => t.TransactionId == transactionId);
+            if (transactionToDelete != null)
+            {
+                transactions.Remove(transactionToDelete);
+
+                // Rewrite the updated transactions list to the file
+                using (var writer = new StreamWriter(_transactionsFilePath, append: false))
+                {
+                    // Write the header
+                    await writer.WriteLineAsync("TransactionId,Title,Amount,Type,Date,Tags,Note");
+                    foreach (var trans in transactions)
+                    {
+                        string formattedDate = trans.Date.ToString("yyyy-MM-dd");
+                        string csvRow = $"{trans.TransactionId},{trans.Title}," +
+                                        $"{trans.Amount},{trans.Type},{formattedDate},{trans.Tags},{trans.Note}";
+                        await writer.WriteLineAsync(csvRow);
+                    }
+                }
+            }
+            else
+            {
+                throw new Exception("Transaction not found");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting transaction: {ex.Message}");
+            throw;
+        }
+    }
+
 }
