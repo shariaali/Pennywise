@@ -6,47 +6,55 @@
 @inject ITransactionService TransactionService
 <h3>Add New Transaction</h3>
 
-<div class="form-container">
+<h3 class="text-center mb-4">Add New Transaction</h3>
+<div class="form-container p-4 border rounded shadow-sm" style="max-width: 500px; margin: 0 auto;">
     <form class="transaction-form">
-        <div class="form-group">
+        <div class="form-group mb-3">
             <label for="title">Title:</label>
-            <input id="title" type="text" @bind="newTransaction.Title" />
+            <input id="title" class="form-control" type="text" @bind="newTransaction.Title" placeholder="Enter title" />
         </div>
 
-        <div class="form-group">
+        <div class="form-group mb-3">
             <label for="amount">Amount:</label>
-            <input id="amount" type="number" step="0.01" @bind="newTransaction.Amount" />
+            <input id="amount" class="form-control" type="number" step="0.01" @bind="newTransaction.Amount" placeholder="Enter amount" />
         </div>
 
-        <div class="form-group">
+        <div class="form-group mb-3">
             <label for="type">Type:</label>
-            <select id="type" @bind="newTransaction.Type">
-                <option value="Credit">Credit</option>
-                <option value="Debit">Debit</option>
-                <option value="Debt">Debt</option>
+            <select id="type" class="form-control" @bind="newTransaction.Type">
+                <option value="Inflow">Inflow</option>
+                <option value="Outflow">Outflow</option>
             </select>
         </div>
 
-        <div class="form-group">
+        <div class="form-group mb-3">
             <label for="date">Date:</label>
-            <input id="date" type="date" @bind="newTransaction.Date" />
+            <input id="date" class="form-control" type="date" @bind="newTransaction.Date" />
         </div>
 
-        <div class="form-group">
+        <div class="form-group mb-3">
             <label for="tags">Tags:</label>
-            <input id="tags" type="text" @bind="newTransaction.Tags" placeholder="e.g., groceries, bills, rent" />
+            <input id="tags" class="form-control" type="text" @bind="newTransaction.Tags" placeholder="e.g., groceries, bills, rent" />
         </div>
 
-        <div class="form-group">
+        <div class="form-group mb-3">
             <label for="note">Notes:</label>
-            <textarea id="note" @bind="newTransaction.Note" rows="4" placeholder="Add any additional notes here..."></textarea>
+            <textarea id="note" class="form-control" @bind="newTransaction.Note" rows="4" placeholder="Add any additional notes here..."></textarea>
         </div>
 
-        <div class="form-actions">
-            <button type="button" @onclick="AddNewTransaction">Add Transaction</button>
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-primary" @onclick="AddNewTransaction">Add Transaction</button>
+            <button type="button" class="btn btn-secondary" @onclick="CancelTransaction">Cancel</button>
         </div>
     </form>
 </div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">
+        @errorMessage
+    </div>
+}
 
 @code{
     private Transaction newTransaction = new Transaction();
@@ -54,16 +62,37 @@
 
     private string errorMessage;
 
+    private void CancelTransaction()
+    {
+        // Reset the form or clear the transaction details
+        newTransaction = new Transaction();
+        Console.WriteLine("Transaction Canceled");
+    }
+
     private async Task AddNewTransaction()
     {
         try
         {
             var existingTransactions = await transactionService.LoadTransactionsAsync();
+            
+            // If it's an outflow, check the balance first
+            if (newTransaction.Type == "Outflow")
+            {
+                var (totalInflows, totalOutflows, _, _, _, balance, isSufficientBalance) = 
+                    transactionService.CalculateTransactionSums(existingTransactions);
+
+                // Check if there's enough balance for this outflow
+                if (newTransaction.Amount > balance)
+                {
+                    errorMessage = $"Insufficient balance. Current balance: {balance:C}, Attempted outflow: {newTransaction.Amount:C}";
+                    return; // Don't proceed with adding the transaction
+                }
+            }
+
             int nextTransactionId = existingTransactions.Count > 0
                 ? existingTransactions.Max(t => t.TransactionId) + 1
-                : 1; // Start with 1 if no transactions exist
+                : 1;
 
-            // Set the TransactionId dynamically
             newTransaction.TransactionId = nextTransactionId;
             await TransactionService.SaveTransactionAsync(newTransaction);
             newTransaction = new Transaction(); // Reset the form

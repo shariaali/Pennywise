@@ -21,20 +21,37 @@ public class TransactionService : ITransactionService
             // Load all transactions from the file
             var transactions = await LoadTransactionsAsync();
 
-            // Find and update the transaction in the list
-            var existingTransaction = transactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
-            if (existingTransaction != null)
+            // If it's an outflow, verify sufficient balance
+            if (transaction.Type == "Outflow")
             {
-                existingTransaction.Title = transaction.Title;
-                existingTransaction.Amount = transaction.Amount;
-                existingTransaction.Type = transaction.Type;
-                existingTransaction.Date = transaction.Date;
-                existingTransaction.Tags = transaction.Tags;
-                existingTransaction.Note = transaction.Note;
+                var (totalInflows, totalOutflows, _, _, _, balance, _) = CalculateTransactionSums(transactions);
+                
+                // For updates, exclude the existing transaction amount from the balance calculation
+                var existingTransaction = transactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
+                if (existingTransaction != null && existingTransaction.Type == "Outflow")
+                {
+                    balance += existingTransaction.Amount; // Add back the existing outflow amount
+                }
+
+                if (transaction.Amount > balance)
+                {
+                    throw new InvalidOperationException($"Insufficient balance. Current balance: {balance:C}, Attempted outflow: {transaction.Amount:C}");
+                }
+            }
+
+            // Find and update the transaction in the list
+            var existingTrans = transactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
+            if (existingTrans != null)
+            {
+                existingTrans.Title = transaction.Title;
+                existingTrans.Amount = transaction.Amount;
+                existingTrans.Type = transaction.Type;
+                existingTrans.Date = transaction.Date;
+                existingTrans.Tags = transaction.Tags;
+                existingTrans.Note = transaction.Note;
             }
             else
             {
-                // If the transaction doesn't exist, it's a new one, so add it
                 transactions.Add(transaction);
             }
 
@@ -45,9 +62,9 @@ public class TransactionService : ITransactionService
                 await writer.WriteLineAsync("TransactionId,Title,Amount,Type,Date,Tags,Note");
                 foreach (var trans in transactions)
                 {
-                    string formattedDate = trans.Date.ToString("yyyy-MM-dd");
+                    
                     string csvRow = $"{trans.TransactionId},{trans.Title}," +
-                                    $"{trans.Amount},{trans.Type},{formattedDate},{trans.Tags},{trans.Note}";
+                                    $"{trans.Amount},{trans.Type},{trans.Date},{trans.Tags},{trans.Note}";
                     await writer.WriteLineAsync(csvRow);
                 }
             }
@@ -109,39 +126,38 @@ public class TransactionService : ITransactionService
         decimal totalOutflows = 0;
         decimal totalDebt = 0;
         decimal totalClearedDebt = 0;
-        bool isSufficientBalance = true;  // Assume sufficient balance unless proven otherwise
 
         foreach (var transaction in transactions)
         {
-            if (transaction.Type == "Credit")
+            switch (transaction.Type)
             {
-                totalInflows += transaction.Amount;
-                totalClearedDebt += transaction.Amount;
-            }
-            else if (transaction.Type == "Debit" || transaction.Type == "Debt")
-            {
-                totalOutflows += transaction.Amount;
-                totalDebt += transaction.Amount;
-
-                // Check if there is sufficient balance before processing the outflow
-                if (totalOutflows > totalInflows)
-                {
-                    isSufficientBalance = false; // Not enough balance to cover outflows
-                }
+                case "Inflow":
+                    totalInflows += transaction.Amount;
+                    break;
+                case "Outflow":
+                    totalOutflows += transaction.Amount;
+                    break;
+                case "Debt":
+                    totalDebt += transaction.Amount;
+                    break;
+                case "Cleared":
+                    totalClearedDebt += transaction.Amount;
+                    break;
             }
         }
 
         decimal remainingDebt = totalDebt - totalClearedDebt;
-        decimal balance = totalInflows - totalOutflows; // Calculate balance as the difference between inflows and outflows
+        decimal balance = totalInflows - totalOutflows - remainingDebt;
+        bool isSufficientBalance = balance >= 0;
 
         return (totalInflows, totalOutflows, totalDebt, totalClearedDebt, remainingDebt, balance, isSufficientBalance);
     }
     public (Transaction highestInflow, Transaction lowestInflow, Transaction highestOutflow, Transaction lowestOutflow, Transaction highestDebt, Transaction lowestDebt) GetTransactionExtremes(List<Transaction> transactions)
     {
-        var highestInflow = transactions.Where(t => t.Type == "Credit").OrderByDescending(t => t.Amount).FirstOrDefault();
-        var lowestInflow = transactions.Where(t => t.Type == "Credit").OrderBy(t => t.Amount).FirstOrDefault();
-        var highestOutflow = transactions.Where(t => t.Type == "Debit").OrderByDescending(t => t.Amount).FirstOrDefault();
-        var lowestOutflow = transactions.Where(t => t.Type == "Debit").OrderBy(t => t.Amount).FirstOrDefault();
+        var highestInflow = transactions.Where(t => t.Type == "Inflow").OrderByDescending(t => t.Amount).FirstOrDefault();
+        var lowestInflow = transactions.Where(t => t.Type == "Inflow").OrderBy(t => t.Amount).FirstOrDefault();
+        var highestOutflow = transactions.Where(t => t.Type == "Outflow").OrderByDescending(t => t.Amount).FirstOrDefault();
+        var lowestOutflow = transactions.Where(t => t.Type == "Outflow").OrderBy(t => t.Amount).FirstOrDefault();
         var highestDebt = transactions.Where(t => t.Type == "Debt").OrderByDescending(t => t.Amount).FirstOrDefault();
         var lowestDebt = transactions.Where(t => t.Type == "Debt").OrderBy(t => t.Amount).FirstOrDefault();
 
@@ -167,9 +183,9 @@ public class TransactionService : ITransactionService
                     await writer.WriteLineAsync("TransactionId,Title,Amount,Type,Date,Tags,Note");
                     foreach (var trans in transactions)
                     {
-                        string formattedDate = trans.Date.ToString("yyyy-MM-dd");
                         string csvRow = $"{trans.TransactionId},{trans.Title}," +
-                                        $"{trans.Amount},{trans.Type},{formattedDate},{trans.Tags},{trans.Note}";
+                                      $"{trans.Amount},{trans.Type}," +
+                                      $"{trans.Date:yyyy-MM-dd},{trans.Tags},{trans.Note}";
                         await writer.WriteLineAsync(csvRow);
                     }
                 }
@@ -184,6 +200,44 @@ public class TransactionService : ITransactionService
             Console.WriteLine($"Error deleting transaction: {ex.Message}");
             throw;
         }
+    }
+
+    public async Task<List<Transaction>> SearchTransactionsByTitleAsync(string title)
+    {
+        var transactions = await LoadTransactionsAsync();
+        return transactions.Where(t => t.Title.Contains(title, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+    public async Task<List<Transaction>> FilterTransactionsAsync(DateTime? startDate, DateTime? endDate, string type, string tags)
+    {
+        var transactions = await LoadTransactionsAsync();
+        return transactions.Where(t =>
+            (!startDate.HasValue || t.Date >= startDate.Value) &&
+            (!endDate.HasValue || t.Date <= endDate.Value) &&
+            (string.IsNullOrEmpty(type) || t.Type.Equals(type, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(tags) || t.Tags.Contains(tags, StringComparison.OrdinalIgnoreCase))
+        ).ToList();
+    }
+    public async Task<List<Transaction>> SortTransactionsAsync(string sortBy, bool isAscending)
+    {
+        var transactions = await LoadTransactionsAsync();
+        return sortBy.ToLower() switch
+        {
+            "date" => isAscending ? transactions.OrderBy(t => t.Date).ToList() : transactions.OrderByDescending(t => t.Date).ToList(),
+            _ => transactions // Default: no sorting
+        };
+    }
+    public async Task<List<Transaction>> SortTransactionsAscending(string sortBy)
+    {
+        var transactions = await LoadTransactionsAsync();
+
+        // Sort transactions in ascending order by date
+        return transactions.OrderBy(t => t.Date).ToList();
+    }
+    public async Task<List<Transaction>> SortTransactionsDescending(string sortBy)
+    {
+        var transactions = await LoadTransactionsAsync();
+        // Sort transactions in descending order by date
+        return transactions.OrderByDescending(t => t.Date).ToList();
     }
 
 }

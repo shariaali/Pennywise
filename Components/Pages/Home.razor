@@ -4,6 +4,7 @@
 @using Pennywise.Services.Interfaces
 @inject NavigationManager Nav
 @inject IUserService UserService
+@inject ITransactionService TransactionService
 
 <!-- Logout Button -->
 @*<button class="btn btn-lg btn-secondary" @onclick="ShowLogoutConfirmation" style="position: fixed; top: 20px; right: 20px;">
@@ -17,37 +18,37 @@
         <MudItem xs="12" sm="6" md="4">
             <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
                 <MudText>Total Cash Inflows</MudText>
-                <MudText Typo="Typo.body2" Style="color: darkgreen;">$5000</MudText>
+                <MudText Typo="Typo.body2" Style="color: darkgreen;">$@_totalInflows</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="6" md="4">
             <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
                 <MudText>Total Cash Outflows</MudText>
-                <MudText Typo="Typo.body2" Style="color: red;">$6000</MudText>
+                <MudText Typo="Typo.body2" Style="color: red;">$@_totalOutflows</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="12" md="4">
             <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
                 <MudText>Remaining Balance</MudText>
-                <MudText Typo="Typo.body2" Style="color: blue;">$10000</MudText>
+                <MudText Typo="Typo.body2" Style="color: blue;">$@_balance</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="6" md="4">
             <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
                 <MudText>Remaining Debts</MudText>
-                <MudText Typo="Typo.body2" Style="color: yellow;">$1000</MudText>
+                <MudText Typo="Typo.body2" Style="color: yellow;">$@_remainingDebt</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="6" md="4">
             <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
                 <MudText>Cleared Debts</MudText>
-                <MudText Typo="Typo.body2" Style="color: green;">$100</MudText>
+                <MudText Typo="Typo.body2" Style="color: green;">$@_totalClearedDebt</MudText>
             </MudPaper>
         </MudItem>
         <MudItem xs="12" sm="12" md="4">
             <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
                 <MudText>Total Debts</MudText>
-                <MudText Typo="Typo.body2" Style="color: gray;">$0</MudText>
+                <MudText Typo="Typo.body2" Style="color: gray;">$@_totalDebt</MudText>
             </MudPaper>
         </MudItem>
         @*Cards Section*@
@@ -124,10 +125,11 @@
 
 </MudContainer>
 
-@code {
-    private int Index = -1; //default value cannot be 0 -> first selectedindex is 0.
-    public ChartOptions Options = new ChartOptions();
 
+   
+@code {
+    private int Index = -1;
+    public ChartOptions Options = new ChartOptions();
     public List<ChartSeries> Series = new List<ChartSeries>()
     {
         new ChartSeries() { Name = "Income", Data = new double[] { 90, 79, 72, 69, 62, 62, 55, 65, 70 } },
@@ -137,42 +139,44 @@
 
     private bool _hidePosition;
     private bool _loading;
+    private decimal _totalInflows;
+    private decimal _totalOutflows;
+    private decimal _totalDebt;
+    private decimal _totalClearedDebt;
+    private decimal _remainingDebt;
+    private decimal _balance;
+    private bool _isSufficientBalance;
 
-   
-   private IEnumerable<Transaction> _elements = new List<Transaction>
-    {
-        new Transaction { Date = new DateTime(2024, 8, 1), Amount = 500 },
-        new Transaction { Date = new DateTime(2024, 8, 2), Amount = 1500 },
-        new Transaction { Date = new DateTime(2024, 8, 3), Amount = 2500 },
-        new Transaction { Date = new DateTime(2024, 8, 4), Amount = 3500 },
-
-    };
-
+    private IEnumerable<Transaction> _elements = new List<Transaction>();
     private string _loggedInUsername = string.Empty;
-
     private string _message = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-
         if (UserService.IsLoggedIn)
         {
             _loggedInUsername = UserService.LoggedInUser;
             _message = $"Welcome, {_loggedInUsername}!";
         }
+        else
+        {
+            _message = "You are not logged in.";
+        }
 
-        // Display a welcome message for the single user
-        _message = "You are not logged in.";
-        /* var transactions = await transactionService.LoadTransactionsAsync();
-         var sums = transactionService.CalculateTransactionSums(transactions);
-         _totalInflows = sums.totalInflows;
-         _totalOutflows = sums.totalOutflows;
-         _totalDebt = sums.totalDebt;
-         _totalClearedDebt = sums.totalClearedDebt;
-         _remainingDebt = sums.remainingDebt;
-         _balance = sums.balance;*/
-
+        var transactions = await TransactionService.LoadTransactionsAsync();
+        var sums = TransactionService.CalculateTransactionSums(transactions);
+        
+        _totalInflows = sums.totalInflows;
+        _totalOutflows = sums.totalOutflows;
+        _totalDebt = sums.totalDebt;
+        _totalClearedDebt = sums.totalClearedDebt;
+        _remainingDebt = sums.remainingDebt;
+        _balance = sums.balance;
+        _isSufficientBalance = sums.isSufficientBalance;
+        
+        _elements = transactions.OrderByDescending(t => t.Amount).Take(4);
     }
+
 
 
 }
