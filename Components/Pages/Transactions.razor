@@ -10,11 +10,17 @@
 
 <div class="transactions-page">
     <div class="header">
-        <h3>View all transactions</h3>
+        <div class="header-left">
+            <h3>View all transactions</h3>
+        </div>
         <div class="actions">
             <div class="search-box">
                 <input type="text" @bind="SearchTitle" placeholder="Search" />
             </div>
+            <button class="sort-btn" @onclick="ToggleSort">
+                <i class="fas fa-sort"></i>
+                @(IsAscending ? "Oldest First" : "Newest First")
+            </button>
             <button class="btn-add" @onclick="AddTransaction">
                 Add Transaction <i class="fas fa-plus"></i>
             </button>
@@ -193,6 +199,9 @@
         try
         {
             FilteredTransactions = await TransactionService.LoadTransactionsAsync();
+            FilteredTransactions = IsAscending 
+                ? FilteredTransactions.OrderBy(t => t.Date).ToList()
+                : FilteredTransactions.OrderByDescending(t => t.Date).ToList();
         }
         catch (Exception ex)
         {
@@ -240,7 +249,9 @@
         {
             filtered = filtered.Where(t => t.Title.Contains(SearchTitle, StringComparison.OrdinalIgnoreCase)).ToList();
         }
-        FilteredTransactions = filtered;
+        FilteredTransactions = IsAscending 
+            ? filtered.OrderBy(t => t.Date).ToList()
+            : filtered.OrderByDescending(t => t.Date).ToList();
     }
     private async Task ApplySorting()
     {
@@ -342,5 +353,13 @@
         {
             await JS.InvokeVoidAsync("alert", $"Error saving transaction: {ex.Message}");
         }
+    }
+
+    private async Task ToggleSort()
+    {
+        IsAscending = !IsAscending;
+        FilteredTransactions = IsAscending 
+            ? FilteredTransactions.OrderBy(t => t.Date).ToList()
+            : FilteredTransactions.OrderByDescending(t => t.Date).ToList();
     }
 }
