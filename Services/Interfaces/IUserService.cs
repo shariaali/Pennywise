@@ -12,5 +12,6 @@ namespace Pennywise.Services.Interfaces
         bool Login(User user);
         bool IsLoggedIn { get; }
         string LoggedInUser { get; }
+        void Logout();
     }
 }

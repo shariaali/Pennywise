@@ -1,4 +1,5 @@
-﻿@page "/transactions"
+﻿@using System
+@page "/transactions"
 @using Pennywise.Model;
 @using Pennywise.Services.Interfaces;
 @inject NavigationManager Nav
@@ -6,131 +7,127 @@
 @inject ITagService TagService
 @inject IJSRuntime JS
 
-<h3>Transactions</h3>
-
-<div class="filter-container">
-    <h3>Filters</h3>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            <label for="searchTitle">Search by Title:</label>
-            <input type="text" id="searchTitle" @bind="SearchTitle" class="form-control" placeholder="Enter title" />
-        </div>
-        <div class="form-group col-md-6">
-            <label for="filterTags">Filter by Tags:</label>
-            <input type="text" id="filterTags" @bind="FilterTags" class="form-control" placeholder="Enter tags" />
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            <label for="filterType">Filter by Type:</label>
-            <select id="filterType" @bind="FilterType" class="form-control">
-                <option value="">All</option>
-                <option value="Inflow">Inflow</option>
-                <option value="Outflow">Outflow</option>
-            </select>
-        </div>
-        <div class="form-group col-md-6">
-            <label for="startDate">Start Date:</label>
-            <input type="date" id="startDate" @bind="StartDate" class="form-control" />
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            <label for="endDate">End Date:</label>
-            <input type="date" id="endDate" @bind="EndDate" class="form-control" />
-        </div>
-        <div class="form-group col-md-6 d-flex align-items-end">
-            <button @onclick="ApplyFiltersAndSearch" class="btn btn-primary mr-2">Apply Filters</button>
-            <button @onclick="ClearFilters" class="btn btn-secondary">Clear Filters</button>
-        </div>
-    </div>
-</div>
-<div class="sort-container mt-4">
-    <h3>Sorting</h3>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            <label for="sortDate">Sort by:</label>
-            <select id="sortDate" @bind="SortBy" class="form-control">
-                <option value="Date">Date</option>
-            </select>
-        </div>
-        <div class="form-group col-md-6">
-            <label>Order:</label>
-            <div class="d-flex align-items-center">
-                <div class="form-check mr-3">
-                    <input type="radio" id="ascending" name="sortOrder" checked="@(IsAscending)"
-                           @onchange="@(() => IsAscending = true)" class="form-check-input" />
-                    <label for="ascending" class="form-check-label">Ascending</label>
-                </div>
-                <div class="form-check">
-                    <input type="radio" id="descending" name="sortOrder" checked="@(!IsAscending)"
-                           @onchange="@(() => IsAscending = false)" class="form-check-input" />
-                    <label for="descending" class="form-check-label">Descending</label>
-                </div>
+<div class="transactions-page">
+    <div class="header">
+        <h3>View all transactions</h3>
+        <div class="actions">
+            <div class="search-box">
+                <input type="text" @bind="SearchTitle" placeholder="Search" />
             </div>
+            <button class="btn-add" @onclick="AddTransaction">
+                Add Transaction <i class="fas fa-plus"></i>
+            </button>
         </div>
     </div>
-    <button @onclick="ApplySorting" class="btn btn-secondary mt-2">Sort</button>
-</div>
 
+    <div class="stats-cards">
+        <div class="stat-card">
+            <span class="label">Total Transactions</span>
+            <span class="value">@FilteredTransactions?.Count</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Total Income</span>
+            <span class="value income">$@_totalInflows</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Total Expense</span>
+            <span class="value expense">$@_totalOutflows</span>
+        </div>
+    </div>
 
-<div class="table-container mt-4">
-    <table class="transactions-table table table-striped">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Amount</th>
-                <th>Type</th>
-                <th>Date</th>
-                <th>Tags</th>
-                <th>Note</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            @if (FilteredTransactions == null || FilteredTransactions.Count == 0)
+    <div class="filters">
+        <select @bind="FilterType" class="filter-select">
+            <option value="">Transaction type</option>
+            <option value="Inflow">Income</option>
+            <option value="Outflow">Expense</option>
+        </select>
+        <select @bind="FilterTags" class="filter-select">
+            <option value="">Tags</option>
+            @foreach (var tag in _defaultTags)
             {
-                <tr>
-                    <td colspan="8">No transactions available</td>
-                </tr>
+                <option value="@tag">@tag</option>
             }
-            else
-            {
-                @foreach (var transaction in FilteredTransactions)
+        </select>
+        <input type="date" @bind="StartDate" class="filter-date" placeholder="Start Date"/>
+        <input type="date" @bind="EndDate" class="filter-date" placeholder="End Date"/>
+        <button class="btn-filter" @onclick="ApplyFiltersAndSearch">Apply Filters</button>
+        <button class="btn-clear" @onclick="ClearFilters">Clear</button>
+        <button class="btn-export" @onclick="ExportToCsv">
+            Export CSV <i class="fas fa-download"></i>
+        </button>
+    </div>
+
+    <div class="transactions-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Amount</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th>Tags</th>
+                    <th>Note</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (FilteredTransactions == null || FilteredTransactions.Count == 0)
                 {
                     <tr>
-                        <td>@transaction.TransactionId</td>
-                        <td>@transaction.Title</td>
-                        <td>@transaction.Amount</td>
-                        <td>@transaction.Type</td>
-                        <td>@transaction.Date</td>
-                        <td>
-                            @if (!string.IsNullOrEmpty(transaction.Tags))
-                            {
+                        <td colspan="7">No transactions available</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var transaction in FilteredTransactions)
+                    {
+                        <tr>
+                            <td>@transaction.Title</td>
+                            <td class="@(transaction.Type == "Inflow" ? "income" : "expense")">
+                                @(transaction.Type == "Inflow" ? "+" : "-")$@Math.Abs(transaction.Amount)
+                            </td>
+                            <td>
+                                <span class="@(transaction.Type == "Inflow" ? "credit-badge" : "debit-badge")">
+                                    @(transaction.Type == "Inflow" ? "CREDIT" : "DEBIT")
+                                </span>
+                            </td>
+                            <td>@(transaction.Date?.ToShortDateString() ?? "N/A")</td>
+                            <td>
                                 <div class="tags-wrapper">
-                                    @foreach (var tag in transaction.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                                    @foreach (var tag in transaction.Tags?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>())
                                     {
                                         <span class="tag-badge">@tag.Trim()</span>
                                     }
                                 </div>
-                            }
-                        </td>
-                        <td>@transaction.Note</td>
-                        <td>
-                            <button @onclick="() => NavigateToEditPage(transaction.TransactionId)" class="btn btn-primary btn-sm">Edit</button>
-                            <button @onclick="() => DeleteTransaction(transaction.TransactionId)" class="btn btn-danger btn-sm">Delete</button>
-                        </td>
-                    </tr>
+                            </td>
+                            <td class="note-column">
+                                <span>@(string.IsNullOrEmpty(transaction.Note) ? "-" : transaction.Note)</span>
+                                <button class="action-menu" @onclick="@(() => ToggleDropdown(transaction.TransactionId))">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                <div class="dropdown-menu @(activeDropdown == transaction.TransactionId ? "show" : "")">
+                                    <div class="dropdown-item" @onclick="() => NavigateToEditPage(transaction.TransactionId)">
+                                        <i class="fas fa-edit"></i>
+                                        <span>Edit</span>
+                                    </div>
+                                    <div class="dropdown-item" @onclick="() => DeleteTransaction(transaction.TransactionId)">
+                                        <i class="fas fa-trash"></i>
+                                        <span>Delete</span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    }
                 }
-            }
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 @code {
     private List<Transaction> transactions = new List<Transaction>();
     private List<Transaction> FilteredTransactions = new List<Transaction>();
+    private decimal _totalInflows;
+    private decimal _totalOutflows;
 
     private string SearchTitle;
     private string FilterType;
@@ -149,18 +146,25 @@
         "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
     };
 
+    private int? activeDropdown;
+
     protected override async Task OnInitializedAsync()
     {
-        // Get all transactions from the service
         try
         {
             transactions = await TransactionService.LoadTransactionsAsync();
-            FilteredTransactions = await TransactionService.LoadTransactionsAsync();
+            FilteredTransactions = transactions;
+            
+            // Calculate totals using the same method as Home page
+            var sums = TransactionService.CalculateTransactionSums(transactions);
+            _totalInflows = sums.totalInflows;
+            _totalOutflows = sums.totalOutflows;
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading transactions: {ex.Message}");
         }
+        activeDropdown = null;
     }
 
     private async Task LoadTransactionsAsync()
@@ -252,4 +256,23 @@
         }
     }
 }
+
+    private async Task ExportToCsv()
+    {
+        // Implementation for CSV export
+        await JS.InvokeVoidAsync("alert", "Export functionality coming soon");
+    }
+
+    private void AddTransaction()
+    {
+        Nav.NavigateTo("/addtransaction");
+    }
+
+    private void ToggleDropdown(int transactionId)
+    {
+        if (activeDropdown == transactionId)
+            activeDropdown = null;
+        else
+            activeDropdown = transactionId;
+    }
 }

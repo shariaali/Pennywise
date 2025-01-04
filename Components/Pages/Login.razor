@@ -1,76 +1,90 @@
 ﻿@page "/login"
-@using System.ComponentModel.DataAnnotations;
+@using System.ComponentModel.DataAnnotations
 @using Pennywise.Services.Interfaces
 @using Pennywise.Model
-@using MudBlazor
 @inject NavigationManager Nav
 @inject IUserService UserService
 
+<div class="login-container">
+    <div class="login-left">
+        <img src="/images/logo.png" alt="PennyWise" class="logo" />
+        <h1>Personal Finance<br />Simplified...</h1>
+        <p class="subtitle">
+            Take control of your finances with ease. Track your income, expenses, and debts, all in one place. 
+            Your financial journey starts here.
+        </p>
+    </div>
 
-<MudContainer Class="d-flex justify-center align-center" Style="height:100vh;">
-    <MudGrid>
-        <!-- Left Side: Login Form -->
-        <MudItem xs="12" md="6">
-            <MudPaper Class="p-6 d-flex flex-column gap-4" Elevation="3">
-                <MudText Typo="Typo.h4">Log in to Your Account</MudText>
-                <MudForm Model="@Users" @ref="form" Validation="true">
-                    <!-- Username Field -->
-                    <MudTextField T="string" Label="Username" Variant="Variant.Filled" @bind-Value="Users.Username"
-                                  For="@(() => Users.Username)" Required="true" RequiredError="Username is required." />
+    <div class="login-right">
+        <div class="login-form">
+            <h2>WELCOME BACK!</h2>
+            <h3>Log In to your Account</h3>
 
-                    <!-- Password Field -->
-                    <MudTextField T="string" Label="Password" Variant="Variant.Filled" InputType="InputType.Password"
-                                  @bind-Value="Users.Password" For="@(() => Users.Password)" Required="true"
-                                  RequiredError="Password is required." Class="mt-3" />
+            <EditForm Model="@Users" OnValidSubmit="HandleLogin">
+                <DataAnnotationsValidator />
 
-                    <MudSelect T="string" @bind-Value="Users.PreferredCurrency" Variant="Variant.Outlined" Label="Preferred Currency">
-                        <MudSelectItem Value="@("USD")" />
-                        <MudSelectItem Value="@("EUR")" />
-                        <MudSelectItem Value="@("NRS")" />
-                    </MudSelect>
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" class="form-control" @bind="Users.Username" 
+                           placeholder="jonedoe123" />
+                    <ValidationMessage For="@(() => Users.Username)" />
+                </div>
 
-                    @if (!string.IsNullOrEmpty(ErrorMessage))
-                    {
-                        <MudAlert Severity="Severity.Error" Class="mt-3">
-                            @ErrorMessage
-                        </MudAlert>
-                    }
-                    <!-- Login Button -->
-                    <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="HandleLogin" Class="mt-4">
-                        Login
-                    </MudButton>
-                </MudForm>
-            </MudPaper>
-        </MudItem>
+                <div class="form-group">
+                    <label>Currency</label>
+                    <select class="form-control currency-select" @bind="Users.PreferredCurrency">
+                        <option value="USD">
+                            $ - US Dollar (USD)
+                        </option>
+                        <option value="NPR">
+                            रू - Nepalese Rupee (NPR)
+                        </option>
+                    </select>
+                </div>
 
-        <!-- Right Side: Image -->
-        <MudItem xs="12" md="6" Class="d-flex justify-center align-center">
-            <img src="/sloth.jpg" alt="Login Illustration"
-                 style="max-width:100%; height:auto; border-radius:8px;" />
-        </MudItem>
-    </MudGrid>
-</MudContainer>
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-input">
+                        <input type="@(showPassword ? "text" : "password")" 
+                               class="form-control" 
+                               @bind="Users.Password" />
+                        <button type="button" class="toggle-password" @onclick="TogglePasswordVisibility">
+                            <i class="@(showPassword ? "oi oi-eye" : "oi oi-eye-closed")"></i>
+                        </button>
+                    </div>
+                    <ValidationMessage For="@(() => Users.Password)" />
+                </div>
 
+                @if (!string.IsNullOrEmpty(ErrorMessage))
+                {
+                    <div class="alert alert-danger">@ErrorMessage</div>
+                }
 
-@code{
+                <button type="submit" class="btn-continue">CONTINUE</button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
     private string? ErrorMessage;
-    [Required(ErrorMessage = "Username is required.")]
-    private MudForm? form;
+    private bool showPassword;
     public User Users { get; set; } = new();
+
+    private void TogglePasswordVisibility()
+    {
+        showPassword = !showPassword;
+    }
 
     private async Task HandleLogin()
     {
-        await form.Validate();
-        if (form.IsValid)
+        if (UserService.Login(Users))
         {
-            if (UserService.Login(Users))
-            {
-                Nav.NavigateTo("/home");
-            }
-            else
-            {
-                ErrorMessage = "Invalid username or password.";
-            }
+            Nav.NavigateTo("/home");
+        }
+        else
+        {
+            ErrorMessage = "Invalid username or password.";
         }
     }
 }

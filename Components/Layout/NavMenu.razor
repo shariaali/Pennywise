@@ -1,36 +1,81 @@
-﻿<MudPaper Width="250px" Class="py-3" Elevation="0">
-    <MudNavMenu>
-        <MudNavLink Href="/home">Dashboard</MudNavLink>
-        <MudNavLink Href="/transactions">Transactions</MudNavLink>
-        <MudNavLink Href="/debts-tracker">Debts Tracker</MudNavLink>
-        <MudNavLink Href="/addtransaction">Add Transaction</MudNavLink>
-    </MudNavMenu>
-</MudPaper>
-@*
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Pennywise</a>
+﻿@using Pennywise.Services.Interfaces
+@using Pennywise.Model
+@inject NavigationManager NavigationManager
+@inject IUserService UserService
+
+<div class="sidebar">
+    <div class="logo-container">
+        <img src="/images/logo.png" alt="PennyWise" class="nav-logo" />
+    </div>
+    
+    <nav class="nav-menu">
+        <a href="/home" class="nav-item @(GetActiveClass("/home"))">
+            <img src="/images/icons/dashboard.png" class="nav-icon" alt="dashboard" />
+            <span>Dashboard</span>
+        </a>
+        <a href="/transactions" class="nav-item @(GetActiveClass("/transactions"))">
+            <img src="/images/icons/transactions.png" class="nav-icon" alt="transactions" />
+            <span>Transactions</span>
+        </a>
+        
+        <a href="/debts-tracker" class="nav-item @(GetActiveClass("/debts-tracker"))">
+            <img src="/images/icons/debt.png" class="nav-icon" alt="debt" />
+            <span>Debt</span>
+        </a>
+    </nav>
+    
+    <div class="logout-container">
+        <button @onclick="ShowLogoutConfirmation" class="nav-item logout-button">
+            <img src="/images/icons/logout.png" class="nav-icon" alt="logout" />
+            <span>Logout</span>
+        </button>
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+@if (showLogoutDialog)
+{
+    <div class="modal-backdrop" @onclick="HideLogoutConfirmation">
+        <div class="modal-dialog" @onclick:stopPropagation="true">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>Confirm Logout</h5>
+                    <button class="close-button" @onclick="HideLogoutConfirmation">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to logout?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" @onclick="HideLogoutConfirmation">No</button>
+                    <button class="btn-primary" @onclick="Logout">Yes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
-            </NavLink>
-        </div>
-    </nav>
-</div>*@
+@code {
+    private bool showLogoutDialog = false;
+
+    private string GetActiveClass(string href)
+    {
+        var currentUrl = NavigationManager.Uri;
+        return currentUrl.EndsWith(href) ? "active" : "";
+    }
+
+    private void ShowLogoutConfirmation()
+    {
+        showLogoutDialog = true;
+    }
+
+    private void HideLogoutConfirmation()
+    {
+        showLogoutDialog = false;
+    }
+
+    private void Logout()
+    {
+        UserService.Logout();
+        showLogoutDialog = false;
+        NavigationManager.NavigateTo("/login");
+    }
+}
