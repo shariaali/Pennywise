@@ -1,0 +1,20 @@
+.tags-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    max-width: 200px;
+}
+
+.tag-badge {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    display: inline-block;
+}
+
+.tag-badge:hover {
+    background-color: #dee2e6;
+} 

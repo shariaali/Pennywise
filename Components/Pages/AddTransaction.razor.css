@@ -1,2 +1,26 @@
 ﻿body {
 }
+
+.tag-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.btn-delete-tag {
+    background: none;
+    border: none;
+    color: #666;
+    font-size: 1.2rem;
+    padding: 0 4px;
+    margin-left: 4px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.btn-delete-tag:hover {
+    color: #dc3545;
+}

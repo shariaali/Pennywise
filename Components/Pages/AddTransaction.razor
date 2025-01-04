@@ -1,91 +1,147 @@
 ﻿@page "/addtransaction"
-@using Pennywise.Services.Interfaces;
-@using Pennywise.Model;
-@using Pennywise.Services;
+@using Pennywise.Services.Interfaces
+@using Pennywise.Model
 @inject NavigationManager Nav
 @inject ITransactionService TransactionService
-<h3>Add New Transaction</h3>
+@inject ITagService TagService
+@inject IJSRuntime JS
 
 <h3 class="text-center mb-4">Add New Transaction</h3>
 <div class="form-container p-4 border rounded shadow-sm" style="max-width: 500px; margin: 0 auto;">
-    <form class="transaction-form">
+    <EditForm Model="@newTransaction" OnValidSubmit="AddNewTransaction">
+        <DataAnnotationsValidator />
+
         <div class="form-group mb-3">
             <label for="title">Title:</label>
-            <input id="title" class="form-control" type="text" @bind="newTransaction.Title" placeholder="Enter title" />
+            <InputText id="title" class="form-control" @bind-Value="newTransaction.Title" placeholder="Enter title" />
+            <ValidationMessage For="@(() => newTransaction.Title)" class="text-danger" />
         </div>
 
         <div class="form-group mb-3">
             <label for="amount">Amount:</label>
-            <input id="amount" class="form-control" type="number" step="0.01" @bind="newTransaction.Amount" placeholder="Enter amount" />
+            <InputNumber id="amount" class="form-control" @bind-Value="newTransaction.Amount" placeholder="Enter amount" />
+            <ValidationMessage For="@(() => newTransaction.Amount)" class="text-danger" />
         </div>
 
         <div class="form-group mb-3">
             <label for="type">Type:</label>
-            <select id="type" class="form-control" @bind="newTransaction.Type">
+            <InputSelect id="type" class="form-control" @bind-Value="newTransaction.Type">
+                <option value="">Select Type</option>
                 <option value="Inflow">Inflow</option>
                 <option value="Outflow">Outflow</option>
-            </select>
+            </InputSelect>
+            <ValidationMessage For="@(() => newTransaction.Type)" class="text-danger" />
         </div>
 
         <div class="form-group mb-3">
             <label for="date">Date:</label>
-            <input id="date" class="form-control" type="date" @bind="newTransaction.Date" />
+            <InputDate id="date" class="form-control" @bind-Value="newTransaction.Date" />
+            <ValidationMessage For="@(() => newTransaction.Date)" class="text-danger" />
         </div>
 
         <div class="form-group mb-3">
-            <label for="tags">Tags:</label>
-            <input id="tags" class="form-control" type="text" @bind="newTransaction.Tags" placeholder="e.g., groceries, bills, rent" />
+            <label>Tags:</label>
+            <div class="tags-container mb-2">
+                @foreach (var tag in availableTags)
+                {
+                    <div class="tag-checkbox">
+                        <input type="checkbox" id="@tag" 
+                               checked="@(selectedTags.Contains(tag))"
+                               @onchange="@(e => ToggleTag(tag))" />
+                        <label for="@tag">
+                            @tag
+                            @if (!_defaultTags.Contains(tag))
+                            {
+                                <button type="button" class="btn-delete-tag" @onclick="@(() => DeleteCustomTag(tag))" @onclick:preventDefault>×</button>
+                            }
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="add-tag-container">
+                <input type="text" class="form-control" 
+                       @bind="newTag" 
+                       placeholder="Add custom tag" />
+                <button type="button" class="btn btn-outline-primary" @onclick="AddCustomTag">
+                    Add Tag
+                </button>
+            </div>
         </div>
 
         <div class="form-group mb-3">
             <label for="note">Notes:</label>
-            <textarea id="note" class="form-control" @bind="newTransaction.Note" rows="4" placeholder="Add any additional notes here..."></textarea>
+            <InputTextArea id="note" class="form-control" @bind-Value="newTransaction.Note" rows="4" 
+                          placeholder="Add any additional notes here..." />
         </div>
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">@errorMessage</div>
+        }
 
         <div class="d-flex justify-content-between mt-4">
-            <button type="button" class="btn btn-primary" @onclick="AddNewTransaction">Add Transaction</button>
+            <button type="submit" class="btn btn-primary">Add Transaction</button>
             <button type="button" class="btn btn-secondary" @onclick="CancelTransaction">Cancel</button>
         </div>
-    </form>
+    </EditForm>
 </div>
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="alert alert-danger">
-        @errorMessage
-    </div>
-}
-
-@code{
+@code {
     private Transaction newTransaction = new Transaction();
-    private readonly TransactionService transactionService = new TransactionService();
-
+    private List<string> availableTags = new List<string>();
+    private List<string> selectedTags = new List<string>();
+    private string newTag = "";
     private string errorMessage;
 
-    private void CancelTransaction()
+    private readonly List<string> _defaultTags = new List<string>
     {
-        // Reset the form or clear the transaction details
-        newTransaction = new Transaction();
-        Console.WriteLine("Transaction Canceled");
+        "Yearly", "Monthly", "Food", "Drinks", "Clothes", "Gadgets",
+        "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        availableTags = await TagService.GetAllTagsAsync();
+        newTransaction.Date = DateTime.Today; // Set default date
+    }
+
+    private void ToggleTag(string tag)
+    {
+        if (selectedTags.Contains(tag))
+            selectedTags.Remove(tag);
+        else
+            selectedTags.Add(tag);
+        
+        newTransaction.Tags = string.Join(",", selectedTags);
+    }
+
+    private async Task AddCustomTag()
+    {
+        if (!string.IsNullOrWhiteSpace(newTag))
+        {
+            await TagService.AddCustomTagAsync(newTag);
+            availableTags = await TagService.GetAllTagsAsync();
+            selectedTags.Add(newTag);
+            newTransaction.Tags = string.Join(",", selectedTags);
+            newTag = "";
+        }
     }
 
     private async Task AddNewTransaction()
     {
         try
         {
-            var existingTransactions = await transactionService.LoadTransactionsAsync();
+            var existingTransactions = await TransactionService.LoadTransactionsAsync();
             
-            // If it's an outflow, check the balance first
             if (newTransaction.Type == "Outflow")
             {
-                var (totalInflows, totalOutflows, _, _, _, balance, isSufficientBalance) = 
-                    transactionService.CalculateTransactionSums(existingTransactions);
+                var (totalInflows, totalOutflows, totalDebt, totalClearedDebt, remainingDebt, balance, isSufficientBalance) = 
+                    TransactionService.CalculateTransactionSums(existingTransactions);
 
-                // Check if there's enough balance for this outflow
                 if (newTransaction.Amount > balance)
                 {
                     errorMessage = $"Insufficient balance. Current balance: {balance:C}, Attempted outflow: {newTransaction.Amount:C}";
-                    return; // Don't proceed with adding the transaction
+                    return;
                 }
             }
 
@@ -95,13 +151,45 @@
 
             newTransaction.TransactionId = nextTransactionId;
             await TransactionService.SaveTransactionAsync(newTransaction);
-            newTransaction = new Transaction(); // Reset the form
-
+            
             Nav.NavigateTo("/transactions");
         }
         catch (Exception ex)
         {
-            errorMessage = $"An error occurred while adding the transaction: {ex.Message}";
+            errorMessage = $"An error occurred: {ex.Message}";
+        }
+    }
+
+    private void CancelTransaction()
+    {
+        Nav.NavigateTo("/transactions");
+    }
+
+    private async Task DeleteCustomTag(string tag)
+    {
+        try
+        {
+            if (!_defaultTags.Contains(tag))
+            {
+                var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the tag '{tag}'?");
+                if (confirmed)
+                {
+                    await TagService.DeleteCustomTagAsync(tag);
+                    // Remove from selected tags if it was selected
+                    if (selectedTags.Contains(tag))
+                    {
+                        selectedTags.Remove(tag);
+                        newTransaction.Tags = string.Join(",", selectedTags);
+                    }
+                    // Refresh available tags
+                    availableTags = await TagService.GetAllTagsAsync();
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error deleting tag: {ex.Message}";
         }
     }
 }

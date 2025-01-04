@@ -24,7 +24,7 @@ public class TransactionService : ITransactionService
             // If it's an outflow, verify sufficient balance
             if (transaction.Type == "Outflow")
             {
-                var (totalInflows, totalOutflows, _, _, _, balance, _) = CalculateTransactionSums(transactions);
+                var (totalInflows, totalOutflows, totalDebt, totalClearedDebt, remainingDebt, balance, isSufficientBalance) = CalculateTransactionSums(transactions);
                 
                 // For updates, exclude the existing transaction amount from the balance calculation
                 var existingTransaction = transactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
@@ -62,9 +62,13 @@ public class TransactionService : ITransactionService
                 await writer.WriteLineAsync("TransactionId,Title,Amount,Type,Date,Tags,Note");
                 foreach (var trans in transactions)
                 {
+                    // Escape commas in tags and notes
+                    string escapedTags = trans.Tags?.Replace(",", "||") ?? "";
+                    string escapedNote = trans.Note?.Replace(",", "||") ?? "";
                     
                     string csvRow = $"{trans.TransactionId},{trans.Title}," +
-                                    $"{trans.Amount},{trans.Type},{trans.Date},{trans.Tags},{trans.Note}";
+                                  $"{trans.Amount},{trans.Type}," +
+                                  $"{trans.Date:yyyy-MM-dd},{escapedTags},{escapedNote}";
                     await writer.WriteLineAsync(csvRow);
                 }
             }
@@ -104,8 +108,8 @@ public class TransactionService : ITransactionService
                         Amount = decimal.Parse(fields[2]),
                         Type = fields[3],
                         Date = DateTime.Parse(fields[4]),
-                        Tags = fields[5],
-                        Note = fields[6]
+                        Tags = fields[5]?.Replace("||", ","),
+                        Note = fields[6]?.Replace("||", ",")
                     };
 
                     transactions.Add(transaction);

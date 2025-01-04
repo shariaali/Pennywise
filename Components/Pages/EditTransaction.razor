@@ -2,6 +2,7 @@
 @using Pennywise.Model;
 @using Pennywise.Services.Interfaces;
 @inject ITransactionService TransactionService
+@inject ITagService TagService
 @inject NavigationManager Nav
 
 <h3 class="text-center mb-4">Edit Transaction</h3>
@@ -30,13 +31,7 @@ else
 
             <div class="form-group mb-3">
                 <label for="type">Type:</label>
-                <InputSelect id="type" class="form-control" @bind-Value="transaction.Type">
-                    <option value="Inflow">Inflow</option>
-                    <option value="Outflow">Outflow</option>
-                    <option value="Debt">Debt</option>
-                    <option value="Cleared">Cleared</option>
-                </InputSelect>
-                <ValidationMessage For="@(() => transaction.Type)" />
+                <InputText id="type" class="form-control" @bind-Value="transaction.Type" readonly />
             </div>
 
             <div class="form-group mb-3">
@@ -47,7 +42,23 @@ else
 
             <div class="form-group mb-3">
                 <label for="tags">Tags:</label>
-                <InputText id="tags" class="form-control" @bind-Value="transaction.Tags" />
+                <div class="d-flex flex-wrap gap-2 mb-2">
+                    @foreach (var tag in availableTags)
+                    {
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" 
+                                   checked="@(selectedTags.Contains(tag))"
+                                   @onchange="@(e => ToggleTag(tag))" />
+                            <label class="form-check-label">@tag</label>
+                        </div>
+                    }
+                </div>
+                <div class="input-group">
+                    <input type="text" class="form-control" @bind="newTag" 
+                           placeholder="Add custom tag" />
+                    <button class="btn btn-outline-secondary" type="button" 
+                            @onclick="AddCustomTag">Add Tag</button>
+                </div>
             </div>
 
             <div class="form-group mb-3">
@@ -74,6 +85,9 @@ else
 
     private Transaction transaction;
     private string errorMessage;
+    private List<string> availableTags = new List<string>();
+    private List<string> selectedTags = new List<string>();
+    private string newTag = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -85,11 +99,45 @@ else
             if (transaction == null)
             {
                 Nav.NavigateTo("/transactions");
+                return;
+            }
+
+            // Load available tags
+            availableTags = await TagService.GetAllTagsAsync();
+
+            // Initialize selected tags from transaction
+            if (!string.IsNullOrEmpty(transaction.Tags))
+            {
+                selectedTags = transaction.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(t => t.Trim())
+                    .ToList();
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Error loading transaction: {ex.Message}";
+        }
+    }
+
+    private void ToggleTag(string tag)
+    {
+        if (selectedTags.Contains(tag))
+            selectedTags.Remove(tag);
+        else
+            selectedTags.Add(tag);
+        
+        transaction.Tags = string.Join(",", selectedTags);
+    }
+
+    private async Task AddCustomTag()
+    {
+        if (!string.IsNullOrWhiteSpace(newTag))
+        {
+            await TagService.AddCustomTagAsync(newTag);
+            availableTags = await TagService.GetAllTagsAsync();
+            selectedTags.Add(newTag);
+            transaction.Tags = string.Join(",", selectedTags);
+            newTag = "";
         }
     }
 
