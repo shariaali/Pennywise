@@ -19,4 +19,5 @@ public interface ITransactionService
     Task<List<Transaction>> SortTransactionsAsync(string sortBy, bool isAscending);
     Task<List<Transaction>> SortTransactionsAscending(string sortBy);
     Task<List<Transaction>> SortTransactionsDescending(string sortBy);
+    Task<Transaction> GetTransactionAsync(int id);
 }

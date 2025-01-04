@@ -1,0 +1,167 @@
+﻿@using Pennywise.Services.Interfaces
+@using Pennywise.Model
+@inject ITransactionService TransactionService
+@inject ITagService TagService
+@inject IJSRuntime JS
+
+<div class="modal-backdrop">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add transaction</h3>
+                <button class="close-button" @onclick="OnCancel">&times;</button>
+            </div>
+
+            <EditForm Model="@Transaction" OnValidSubmit="HandleSubmit">
+                <DataAnnotationsValidator />
+
+                <div class="form-field">
+                    <label>Transaction Title</label>
+                    <input type="text" class="input-field" @bind="Transaction.Title" 
+                           placeholder="Give a title for your transaction" />
+                    <ValidationMessage For="@(() => Transaction.Title)" />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-field">
+                        <label>Transaction Type</label>
+                        <select class="input-field" @bind="Transaction.Type">
+                            <option value="">Expense/Income</option>
+                            <option value="Outflow">Expense</option>
+                            <option value="Inflow">Income</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label>Amount</label>
+                        <input type="number" class="input-field" @bind="Transaction.Amount" 
+                               placeholder="$XX.XX" />
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Tags</label>
+                    <div class="tags-container">
+                        @foreach (var tag in availableTags)
+                        {
+                            <div class="tag-checkbox">
+                                <input type="checkbox" id="@tag"
+                                       checked="@(selectedTags.Contains(tag))"
+                                       @onchange="@(e => ToggleTag(tag))" />
+                                <label for="@tag">@tag</label>
+                                @if (!_defaultTags.Contains(tag))
+                                {
+                                    <button type="button" class="delete-tag" @onclick="async () => await DeleteCustomTag(tag)">×</button>
+                                }
+                            </div>
+                        }
+                    </div>
+                    <div class="add-tag-container">
+                        <input type="text" class="input-field" 
+                               @bind="newTag"
+                               placeholder="Add custom tags for your transaction" />
+                        <button type="button" class="btn-outline-primary" @onclick="AddCustomTag">
+                            +
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label>Transaction Date</label>
+                    <input type="date" class="input-field" @bind="Transaction.Date" />
+                </div>
+
+                <div class="form-field">
+                    <label>Notes (Optional)</label>
+                    <textarea class="input-field" @bind="Transaction.Note" 
+                             placeholder="Add an optional memo about your transaction"></textarea>
+                </div>
+
+                <button type="submit" class="submit-btn">
+                    ADD TRANSACTION
+                </button>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Transaction Transaction { get; set; } = new();
+    [Parameter] public EventCallback<Transaction> OnSave { get; set; }
+    [Parameter] public EventCallback OnCancel { get; set; }
+
+    private List<string> availableTags = new();
+    private List<string> selectedTags = new();
+    private string newTag = "";
+    private string errorMessage;
+    private List<string> _defaultTags = new() { "Yearly", "Monthly", "Food", "Drinks","Clothes","Gadgets","Miscellaneous","Fuel","Rent","EMI","Party"};
+
+    protected override async Task OnInitializedAsync()
+    {
+        availableTags = await TagService.GetAllTagsAsync();
+        if (!string.IsNullOrEmpty(Transaction.Tags))
+        {
+            selectedTags = Transaction.Tags.Split(',').Select(t => t.Trim()).ToList();
+        }
+        if (Transaction.Date == null)
+        {
+            Transaction.Date = DateTime.Today;
+        }
+    }
+
+    private void ToggleTag(string tag)
+    {
+        if (selectedTags.Contains(tag))
+            selectedTags.Remove(tag);
+        else
+            selectedTags.Add(tag);
+        
+        Transaction.Tags = string.Join(",", selectedTags);
+    }
+
+    private async Task AddCustomTag()
+    {
+        if (!string.IsNullOrWhiteSpace(newTag))
+        {
+            await TagService.AddCustomTagAsync(newTag);
+            availableTags = await TagService.GetAllTagsAsync();
+            selectedTags.Add(newTag);
+            Transaction.Tags = string.Join(",", selectedTags);
+            newTag = "";
+        }
+    }
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            await OnSave.InvokeAsync(Transaction);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+    }
+
+    private async Task DeleteCustomTag(string tag)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the tag '{tag}'?");
+        if (confirmed)
+        {
+            try
+            {
+                await TagService.DeleteCustomTagAsync(tag);
+                availableTags = await TagService.GetAllTagsAsync();
+                if (selectedTags.Contains(tag))
+                {
+                    selectedTags.Remove(tag);
+                    Transaction.Tags = string.Join(",", selectedTags);
+                }
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error deleting tag: {ex.Message}");
+            }
+        }
+    }
+}

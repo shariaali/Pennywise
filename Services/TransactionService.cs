@@ -244,4 +244,11 @@ public class TransactionService : ITransactionService
         return transactions.OrderByDescending(t => t.Date).ToList();
     }
 
+    public async Task<Transaction> GetTransactionAsync(int id)
+    {
+        var transactions = await LoadTransactionsAsync();
+        return transactions.FirstOrDefault(t => t.TransactionId == id) 
+               ?? throw new Exception($"Transaction with ID {id} not found");
+    }
+
 }

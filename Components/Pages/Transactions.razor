@@ -1,4 +1,5 @@
 ﻿@using System
+@using Pennywise.Components.Shared
 @page "/transactions"
 @using Pennywise.Model;
 @using Pennywise.Services.Interfaces;
@@ -123,6 +124,22 @@
     </div>
 </div>
 
+@if (showTransactionModal)
+{
+    <TransactionModal 
+        Transaction="currentTransaction"
+        OnSave="HandleTransactionSave"
+        OnCancel="() => showTransactionModal = false" />
+}
+
+@if (showEditModal)
+{
+    <EditTransactionModal 
+        Transaction="selectedTransaction"
+        OnSave="HandleEditTransactionSave"
+        OnCancel="() => showEditModal = false" />
+}
+
 @code {
     private List<Transaction> transactions = new List<Transaction>();
     private List<Transaction> FilteredTransactions = new List<Transaction>();
@@ -147,6 +164,10 @@
     };
 
     private int? activeDropdown;
+    private bool showTransactionModal;
+    private Transaction currentTransaction = new();
+    private bool showEditModal = false;
+    private Transaction selectedTransaction;
 
     protected override async Task OnInitializedAsync()
     {
@@ -180,9 +201,18 @@
     }
 
 
-    private void NavigateToEditPage(int transactionId)
+    private async Task NavigateToEditPage(int id)
     {
-        Nav.NavigateTo($"/edittransaction/{transactionId}");
+        try 
+        {
+            selectedTransaction = await TransactionService.GetTransactionAsync(id);
+            showEditModal = true;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error loading transaction: {ex.Message}");
+        }
     }
 
     private async Task DeleteTransaction(int transactionId)
@@ -265,7 +295,12 @@
 
     private void AddTransaction()
     {
-        Nav.NavigateTo("/addtransaction");
+        currentTransaction = new Transaction 
+        { 
+            Date = DateTime.Today,
+            TransactionId = 0  // Ensure it's treated as a new transaction
+        };
+        showTransactionModal = true;
     }
 
     private void ToggleDropdown(int transactionId)
@@ -274,5 +309,38 @@
             activeDropdown = null;
         else
             activeDropdown = transactionId;
+    }
+
+    private async Task HandleTransactionSave(Transaction transaction)
+    {
+        try
+        {
+            await TransactionService.SaveTransactionAsync(transaction);
+            showTransactionModal = false;
+            await LoadTransactionsAsync();
+            
+            // Refresh totals
+            var sums = TransactionService.CalculateTransactionSums(FilteredTransactions);
+            _totalInflows = sums.totalInflows;
+            _totalOutflows = sums.totalOutflows;
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error saving transaction: {ex.Message}");
+        }
+    }
+
+    private async Task HandleEditTransactionSave(Transaction transaction)
+    {
+        try
+        {
+            await TransactionService.SaveTransactionAsync(transaction);
+            showEditModal = false;
+            await LoadTransactionsAsync();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error saving transaction: {ex.Message}");
+        }
     }
 }

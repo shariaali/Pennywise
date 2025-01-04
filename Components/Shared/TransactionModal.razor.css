@@ -1,0 +1,171 @@
+.modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-dialog {
+    background: white;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-content {
+    padding: 20px;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.modal-header h3 {
+    font-size: 24px;
+    font-weight: 500;
+    color: #333;
+}
+
+.close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #666;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.form-field {
+    margin-bottom: 16px;
+}
+
+.form-field label {
+    display: block;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #333;
+    background: white;
+}
+
+.input-field::placeholder {
+    color: #999;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #212121;
+}
+
+.form-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.form-row .form-field {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+/* Tags styling */
+.tags-container {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    min-height: 120px;
+    background: #fff;
+}
+
+.tag-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: #f5f5f5;
+    border-radius: 4px;
+    margin: 4px;
+}
+
+.tag-checkbox input[type="checkbox"] {
+    margin: 0;
+}
+
+.tag-checkbox label {
+    margin: 0;
+    font-size: 14px;
+    color: #333;
+}
+
+.add-tag-container {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.add-tag-container input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.btn-outline-primary {
+    padding: 8px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #333;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.btn-outline-primary:hover {
+    background: #333;
+    color: white;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: #212121;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-top: 16px;
+}
+
+.validation-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+} 
