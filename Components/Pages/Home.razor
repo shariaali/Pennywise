@@ -1,132 +1,105 @@
 ﻿@page "/home"
+@using Pennywise.Components.Shared
 @using Pennywise.Model
 @using Pennywise.Services
 @using Pennywise.Services.Interfaces
 @inject NavigationManager Nav
 @inject IUserService UserService
 @inject ITransactionService TransactionService
+@inject IJSRuntime JS
 
-<!-- Logout Button -->
-@*<button class="btn btn-lg btn-secondary" @onclick="ShowLogoutConfirmation" style="position: fixed; top: 20px; right: 20px;">
-    Logout
-</button>*@
+<div class="dashboard-page">
+    <h2>Hello, @_loggedInUsername!</h2>
 
-<MudContainer Class="mt-8 px-4" MaxWidth="MaxWidth.False">
-    <MudText Typo="Typo.h3">Welcome, @_loggedInUsername</MudText>
-    @*Cards Section*@
-    <MudGrid>
-        <MudItem xs="12" sm="6" md="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
-                <MudText>Total Cash Inflows</MudText>
-                <MudText Typo="Typo.body2" Style="color: darkgreen;">$@_totalInflows</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
-                <MudText>Total Cash Outflows</MudText>
-                <MudText Typo="Typo.body2" Style="color: red;">$@_totalOutflows</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="12" md="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
-                <MudText>Remaining Balance</MudText>
-                <MudText Typo="Typo.body2" Style="color: blue;">$@_balance</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
-                <MudText>Remaining Debts</MudText>
-                <MudText Typo="Typo.body2" Style="color: yellow;">$@_remainingDebt</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6" md="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
-                <MudText>Cleared Debts</MudText>
-                <MudText Typo="Typo.body2" Style="color: green;">$@_totalClearedDebt</MudText>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="12" md="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 200px;">
-                <MudText>Total Debts</MudText>
-                <MudText Typo="Typo.body2" Style="color: gray;">$@_totalDebt</MudText>
-            </MudPaper>
-        </MudItem>
-        @*Cards Section*@
+    <div class="stats-overview">
+        <div class="stat-card">
+            <span class="label">Balance</span>
+            <span class="value balance">$@_balance.ToString("N2")</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Incomes</span>
+            <span class="value income">$@_totalInflows.ToString("N2")</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Expenses</span>
+            <span class="value expense">$@_totalOutflows.ToString("N2")</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Cleared Debts</span>
+            <span class="value cleared">$@_totalClearedDebt.ToString("N2")</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Pending Debts</span>
+            <span class="value pending">$@_remainingDebt.ToString("N2")</span>
+        </div>
+    </div>
 
-        @*Charts Section*@
-        <MudItem xs="12" sm="6">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 500px;">
-                @*Line Chart Section*@
-                <div>
-                    <MudChart ChartType="ChartType.Line" ChartSeries="@Series" @bind-SelectedIndex="Index" XAxisLabels="@XAxisLabels" Width="100%" Height="350px" ChartOptions="@Options" />
-                </div>
-                @*Line Chart Section*@
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="6">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 500px;">
-                @*Bar Chart Section*@
-                <div>
-                    <MudChart ChartType="ChartType.Bar" ChartSeries="@Series" @bind-SelectedIndex="Index" XAxisLabels="@XAxisLabels" Width="100%" Height="350px"></MudChart>
-                </div>
-                @*Bar Chart Section*@
-            </MudPaper>
-        </MudItem>
-        @*Charts Section*@
+    <div class="action-buttons">
+        <button class="action-btn income-btn" @onclick="AddIncome">
+            <i class="fas fa-plus"></i>
+            <div>
+                <span class="btn-title">Add income</span>
+                <span class="btn-subtitle">Create an income manually</span>
+            </div>
+        </button>
+        <button class="action-btn expense-btn" @onclick="AddExpense">
+            <i class="fas fa-minus"></i>
+            <div>
+                <span class="btn-title">Add expense</span>
+                <span class="btn-subtitle">Create an expense manually</span>
+            </div>
+        </button>
+        <button class="action-btn debt-btn">
+            <i class="fas fa-exchange-alt"></i>
+            <div>
+                <span class="btn-title">Manage Debts</span>
+                <span class="btn-subtitle">Manage your debts manually</span>
+            </div>
+        </button>
+    </div>
 
-        @*Tables Section*@
-        <MudItem xs="12" sm="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
-                <MudText Typo="Typo.h6">Top 5 Highest Transactions</MudText>
-                <MudTable Items="@_elements.Take(4)" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
-                    <HeaderContent>
-                        <MudTh>Date</MudTh>
-                        <MudTh>Amount</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Date">@context.Date</MudTd>
-                        <MudTd DataLabel="Amount">@context.Amount</MudTd>
-                    </RowTemplate>
-                </MudTable>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="4" md="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
-                <MudText Typo="Typo.h6">Top 5 Lowest Transactions</MudText>
-                <MudTable Items="@_elements.Take(4)" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
-                    <HeaderContent>
-                        <MudTh>Date</MudTh>
-                        <MudTh>Amount</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Date">@context.Date</MudTd>
-                        <MudTd DataLabel="Amount">@context.Amount</MudTd>
-                    </RowTemplate>
-                </MudTable>
-            </MudPaper>
-        </MudItem>
-        <MudItem xs="12" sm="4" md="4">
-            <MudPaper Elevation="2" Class="pa-4" Style="height: 100%">
-                <MudText Typo="Typo.h6">Pending Debts</MudText>
-                <MudTable Items="@_elements.Take(4)" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
-                    <HeaderContent>
-                        <MudTh>Date</MudTh>
-                        <MudTh>Amount</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="Date">@context.Date</MudTd>
-                        <MudTd DataLabel="Amount">@context.Amount</MudTd>
-                    </RowTemplate>
-                </MudTable>
-            </MudPaper>
-        </MudItem>
-        @*Tables Section*@
-    </MudGrid>
+    <div class="dashboard-grid">
+        <div class="transactions-section">
+            <div class="section-header">
+                <h3>Top transactions</h3>
+                <button class="sort-btn">
+                    <i class="fas fa-sort"></i> Highest to Lowest
+                </button>
+            </div>
+            <div class="transactions-list">
+                @foreach (var transaction in _elements)
+                {
+                    <div class="transaction-item">
+                        <div class="transaction-icon @(transaction.Type.ToLower())">
+                            <i class="fas @(transaction.Type == "Inflow" ? "fa-arrow-up" : "fa-arrow-down")"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <span class="transaction-title">@transaction.Title</span>
+                            @* <span class="transaction-date">@transaction.Date.ToString("MMM dd, yyyy")</span> *@
+                        </div>
+                        <span class="transaction-amount @(transaction.Type.ToLower())">
+                            @(transaction.Type == "Inflow" ? "+" : "-")$@Math.Abs(transaction.Amount).ToString("N2")
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
 
-</MudContainer>
+        <div class="chart-section">
+            <MudChart ChartType="ChartType.Line" ChartSeries="@Series" @bind-SelectedIndex="Index"
+                     XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
+        </div>
+    </div>
+</div>
 
+@if (showTransactionModal)
+{
+    <TransactionModal 
+        Transaction="currentTransaction"
+        OnSave="HandleTransactionSave"
+        OnCancel="() => showTransactionModal = false" />
+}
 
-   
 @code {
     private int Index = -1;
     public ChartOptions Options = new ChartOptions();
@@ -150,6 +123,9 @@
     private IEnumerable<Transaction> _elements = new List<Transaction>();
     private string _loggedInUsername = string.Empty;
     private string _message = string.Empty;
+
+    private bool showTransactionModal;
+    private Transaction currentTransaction = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -177,6 +153,51 @@
         _elements = transactions.OrderByDescending(t => t.Amount).Take(4);
     }
 
+    private void AddIncome()
+    {
+        currentTransaction = new Transaction 
+        { 
+            Date = DateTime.Today,
+            Type = "Inflow",
+            TransactionId = 0
+        };
+        showTransactionModal = true;
+    }
 
+    private void AddExpense()
+    {
+        currentTransaction = new Transaction 
+        { 
+            Date = DateTime.Today,
+            Type = "Outflow",
+            TransactionId = 0
+        };
+        showTransactionModal = true;
+    }
 
+    private async Task HandleTransactionSave(Transaction transaction)
+    {
+        try
+        {
+            await TransactionService.SaveTransactionAsync(transaction);
+            showTransactionModal = false;
+            
+            // Refresh data
+            var transactions = await TransactionService.LoadTransactionsAsync();
+            var sums = TransactionService.CalculateTransactionSums(transactions);
+            
+            _totalInflows = sums.totalInflows;
+            _totalOutflows = sums.totalOutflows;
+            _totalDebt = sums.totalDebt;
+            _totalClearedDebt = sums.totalClearedDebt;
+            _remainingDebt = sums.remainingDebt;
+            _balance = sums.balance;
+            
+            _elements = transactions.OrderByDescending(t => t.Amount).Take(4);
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error saving transaction: {ex.Message}");
+        }
+    }
 }

@@ -59,7 +59,10 @@
     private string GetActiveClass(string href)
     {
         var currentUrl = NavigationManager.Uri;
-        return currentUrl.EndsWith(href) ? "active" : "";
+        var baseUri = NavigationManager.BaseUri;
+        var relativePath = currentUrl.Substring(baseUri.Length).TrimEnd('/');
+        
+        return relativePath.Equals(href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase) ? "active" : "";
     }
 
     private void ShowLogoutConfirmation()

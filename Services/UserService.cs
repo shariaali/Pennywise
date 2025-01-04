@@ -11,8 +11,8 @@ namespace Pennywise.Services
     public class UserService : IUserService
 
     {
-        private const string DefaultUsername = "admin";
-        private const string DefaultPassword = "password";
+        private const string DefaultUsername = "sharia";
+        private const string DefaultPassword = "1234";
 
         private User _loggedInUser;
         // Property to track whether the user is logged in.

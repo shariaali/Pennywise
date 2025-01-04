@@ -43,9 +43,9 @@
     color: #FFFFFF;
 }
 
-.nav-item.active {
-    background-color: #2D2D2D;
-    color: #FFFFFF;
+.nav-menu .nav-item.active {
+    background-color: #2D2D2D !important;
+    color: #FFFFFF !important;
     border-left: 3px solid #007FFF;
 }
 
