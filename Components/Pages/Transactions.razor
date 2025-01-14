@@ -89,13 +89,41 @@
                     {
                         <tr>
                             <td>@transaction.Title</td>
-                            <td class="@(transaction.Type == "Inflow" ? "income" : "expense")">
-                                @(transaction.Type == "Inflow" ? "+" : "-")$@Math.Abs(transaction.Amount)
+                            <td class="amount-column">
+                                @{
+                                    string amountPrefix = transaction.Type switch
+                                    {
+                                        "Inflow" => "+",
+                                        "DEBT" when transaction.Title?.StartsWith("Debt from") == true => "+",
+                                        _ => "-"
+                                    };
+
+                                    string amountClass = transaction.Type switch
+                                    {
+                                        "Inflow" => "credit-amount",
+                                        "DEBT" when transaction.Title?.StartsWith("Debt from") == true => "credit-amount",
+                                        _ => "debit-amount"
+                                    };
+                                }
+                                <span class="@amountClass">@amountPrefix$@Math.Abs(transaction.Amount)</span>
                             </td>
                             <td>
-                                <span class="@(transaction.Type == "Inflow" ? "credit-badge" : "debit-badge")">
-                                    @(transaction.Type == "Inflow" ? "CREDIT" : "DEBIT")
-                                </span>
+                                @{
+                                    string badgeClass = transaction.Type switch
+                                    {
+                                        "Inflow" => "credit-badge",
+                                        "DEBT" => "debt-badge",
+                                        _ => "debit-badge"
+                                    };
+
+                                    string displayType = transaction.Type switch
+                                    {
+                                        "Inflow" => "CREDIT",
+                                        "DEBT" => "DEBT",
+                                        _ => "DEBIT"
+                                    };
+                                }
+                                <span class="@badgeClass">@displayType</span>
                             </td>
                             <td>@(transaction.Date?.ToShortDateString() ?? "N/A")</td>
                             <td>
@@ -108,19 +136,23 @@
                             </td>
                             <td class="note-column">
                                 <span>@(string.IsNullOrEmpty(transaction.Note) ? "-" : transaction.Note)</span>
-                                <button class="action-menu" @onclick="@(() => ToggleDropdown(transaction.TransactionId))">
-                                    <i class="fas fa-ellipsis-v"></i>
-                                </button>
-                                <div class="dropdown-menu @(activeDropdown == transaction.TransactionId ? "show" : "")">
-                                    <div class="dropdown-item" @onclick="() => NavigateToEditPage(transaction.TransactionId)">
-                                        <i class="fas fa-edit"></i>
-                                        <span>Edit</span>
-                                    </div>
-                                    <div class="dropdown-item" @onclick="() => DeleteTransaction(transaction.TransactionId)">
-                                        <i class="fas fa-trash"></i>
-                                        <span>Delete</span>
-                                    </div>
-                                </div>
+                                @if (transaction.Type != "DEBT")
+                                {
+                                    <button class="action-menu" @onclick="() => ToggleDropdown(transaction.TransactionId)">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    @if (activeDropdown == transaction.TransactionId)
+                                    {
+                                        <div class="dropdown-menu show">
+                                            <div class="dropdown-item" @onclick="() => NavigateToEditPage(transaction.TransactionId)">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </div>
+                                            <div class="dropdown-item" @onclick="() => DeleteTransaction(transaction.TransactionId)">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </div>
+                                        </div>
+                                    }
+                                }
                             </td>
                         </tr>
                     }

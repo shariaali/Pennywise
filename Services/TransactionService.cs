@@ -18,65 +18,39 @@ public class TransactionService : ITransactionService
     {
         try
         {
-            // Load all transactions from the file
             var transactions = await LoadTransactionsAsync();
-
-            // If it's an outflow, verify sufficient balance
-            if (transaction.Type == "Outflow")
+            
+            if (transaction.TransactionId == 0)
             {
-                var (totalInflows, totalOutflows, totalDebt, totalClearedDebt, remainingDebt, balance, isSufficientBalance) = CalculateTransactionSums(transactions);
-                
-                // For updates, exclude the existing transaction amount from the balance calculation
-                var existingTransaction = transactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
-                if (existingTransaction != null && existingTransaction.Type == "Outflow")
-                {
-                    balance += existingTransaction.Amount; // Add back the existing outflow amount
-                }
-
-                if (transaction.Amount > balance)
-                {
-                    throw new InvalidOperationException($"Insufficient balance. Current balance: {balance:C}, Attempted outflow: {transaction.Amount:C}");
-                }
-            }
-
-            // Find and update the transaction in the list
-            var existingTrans = transactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
-            if (existingTrans != null)
-            {
-                existingTrans.Title = transaction.Title;
-                existingTrans.Amount = transaction.Amount;
-                existingTrans.Type = transaction.Type;
-                existingTrans.Date = transaction.Date;
-                existingTrans.Tags = transaction.Tags;
-                existingTrans.Note = transaction.Note;
+                // New transaction
+                transaction.TransactionId = transactions.Count > 0 ? 
+                    transactions.Max(t => t.TransactionId) + 1 : 1;
+                transactions.Add(transaction);
             }
             else
             {
-                transactions.Add(transaction);
-            }
-
-            // Rewrite the updated transactions list to the file
-            using (var writer = new StreamWriter(_transactionsFilePath, append: false))
-            {
-                // Write the header
-                await writer.WriteLineAsync("TransactionId,Title,Amount,Type,Date,Tags,Note");
-                foreach (var trans in transactions)
+                // Update existing transaction
+                var existingTransaction = transactions.FirstOrDefault(t => t.TransactionId == transaction.TransactionId);
+                if (existingTransaction != null)
                 {
-                    // Escape commas in tags and notes
-                    string escapedTags = trans.Tags?.Replace(",", "||") ?? "";
-                    string escapedNote = trans.Note?.Replace(",", "||") ?? "";
-                    
-                    string csvRow = $"{trans.TransactionId},{trans.Title}," +
-                                  $"{trans.Amount},{trans.Type}," +
-                                  $"{trans.Date:yyyy-MM-dd},{escapedTags},{escapedNote}";
-                    await writer.WriteLineAsync(csvRow);
+                    existingTransaction.Title = transaction.Title;
+                    existingTransaction.Amount = transaction.Amount;
+                    existingTransaction.Type = transaction.Type;
+                    existingTransaction.Date = transaction.Date;
+                    existingTransaction.Note = transaction.Note;
+                    existingTransaction.Tags = transaction.Tags;
+                }
+                else
+                {
+                    transactions.Add(transaction);
                 }
             }
+
+            await SaveTransactionsToFile(transactions);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving transaction: {ex.Message}");
-            throw;
+            throw new Exception($"Error saving transaction: {ex.Message}");
         }
     }
 
@@ -173,36 +147,24 @@ public class TransactionService : ITransactionService
         try
         {
             var transactions = await LoadTransactionsAsync();
+            var transaction = transactions.FirstOrDefault(t => t.TransactionId == transactionId);
+            
+            if (transaction == null)
+                throw new Exception($"Transaction with ID {transactionId} not found");
 
-            // Find the transaction to delete
-            var transactionToDelete = transactions.FirstOrDefault(t => t.TransactionId == transactionId);
-            if (transactionToDelete != null)
+            // If this is a debt-related transaction, update the corresponding debt
+            if (transaction.Type == "DEBT")
             {
-                transactions.Remove(transactionToDelete);
+                // Implementation will depend on your debt service implementation
+                // You'll need to find and update the corresponding debt
+            }
 
-                // Rewrite the updated transactions list to the file
-                using (var writer = new StreamWriter(_transactionsFilePath, append: false))
-                {
-                    // Write the header
-                    await writer.WriteLineAsync("TransactionId,Title,Amount,Type,Date,Tags,Note");
-                    foreach (var trans in transactions)
-                    {
-                        string csvRow = $"{trans.TransactionId},{trans.Title}," +
-                                      $"{trans.Amount},{trans.Type}," +
-                                      $"{trans.Date:yyyy-MM-dd},{trans.Tags},{trans.Note}";
-                        await writer.WriteLineAsync(csvRow);
-                    }
-                }
-            }
-            else
-            {
-                throw new Exception("Transaction not found");
-            }
+            transactions.Remove(transaction);
+            await SaveTransactionsToFile(transactions);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error deleting transaction: {ex.Message}");
-            throw;
+            throw new Exception($"Error deleting transaction: {ex.Message}");
         }
     }
 
@@ -249,6 +211,36 @@ public class TransactionService : ITransactionService
         var transactions = await LoadTransactionsAsync();
         return transactions.FirstOrDefault(t => t.TransactionId == id) 
                ?? throw new Exception($"Transaction with ID {id} not found");
+    }
+
+    private async Task SaveTransactionsToFile(List<Transaction> transactions)
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(_transactionsFilePath);
+            if (!Directory.Exists(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            using (var writer = new StreamWriter(_transactionsFilePath, false))
+            {
+                await writer.WriteLineAsync("TransactionId,Title,Amount,Type,Date,Tags,Note");
+                foreach (var t in transactions)
+                {
+                    var tags = t.Tags?.Replace(",", "||");
+                    var note = t.Note?.Replace(",", "||");
+                    
+                    string csvRow = $"{t.TransactionId},{t.Title},{t.Amount},{t.Type}," +
+                                  $"{t.Date:yyyy-MM-dd},{tags},{note}";
+                    await writer.WriteLineAsync(csvRow);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new Exception($"Error saving transactions to file: {ex.Message}");
+        }
     }
 
 }

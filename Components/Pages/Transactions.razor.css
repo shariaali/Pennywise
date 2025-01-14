@@ -109,12 +109,14 @@ td {
 .expense { color: #dc3545; }
 
 .tag-badge {
-    background: #333;
-    color: white;
-    padding: 0.25rem 0.5rem;
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 4px 8px;
     border-radius: 4px;
-    font-size: 0.8rem;
-    margin-right: 0.5rem;
+    font-size: 12px;
+    margin-right: 4px;
+    display: inline-block;
+    margin-bottom: 4px;
 }
 
 .actions {
@@ -260,6 +262,15 @@ td {
     color: #dc3545;
 }
 
+.debt-badge {
+    background-color: #ff9800;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
 .header-left {
     display: flex;
     align-items: center;
@@ -286,5 +297,47 @@ td {
 
 .sort-btn i {
     font-size: 0.9rem;
+}
+
+.debt-badge {
+    background-color: #ff9800;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.credit-amount {
+    color: #28a745;
+    font-weight: 500;
+}
+
+.debit-amount {
+    color: #dc3545;
+    font-weight: 500;
+}
+
+.amount-column {
+    font-weight: 500;
+}
+
+.tags-column {
+    max-width: 200px;
+}
+
+.tags-wrapper {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.tag-badge {
+    background-color: #e9ecef;
+    color: #495057;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    white-space: nowrap;
 }
 

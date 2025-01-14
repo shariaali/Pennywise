@@ -49,7 +49,7 @@
                 <span class="btn-subtitle">Create an expense manually</span>
             </div>
         </button>
-        <button class="action-btn debt-btn">
+        <button class="action-btn debt-btn" @onclick="NavigateToDebts">
             <i class="fas fa-exchange-alt"></i>
             <div>
                 <span class="btn-title">Manage Debts</span>
@@ -199,5 +199,10 @@
         {
             await JS.InvokeVoidAsync("alert", $"Error saving transaction: {ex.Message}");
         }
+    }
+
+    private void NavigateToDebts()
+    {
+        Nav.NavigateTo("/debts");
     }
 }

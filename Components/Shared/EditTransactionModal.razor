@@ -104,16 +104,6 @@
         }
     }
 
-    private void ToggleTag(string tag)
-    {
-        if (selectedTags.Contains(tag))
-            selectedTags.Remove(tag);
-        else
-            selectedTags.Add(tag);
-        
-        Transaction.Tags = string.Join(",", selectedTags);
-    }
-
     private async Task AddCustomTag()
     {
         if (!string.IsNullOrWhiteSpace(newTag))
@@ -126,10 +116,23 @@
         }
     }
 
+    private void ToggleTag(string tag)
+    {
+        if (selectedTags.Contains(tag))
+            selectedTags.Remove(tag);
+        else
+            selectedTags.Add(tag);
+    }
+
     private async Task HandleSubmit()
     {
         try
         {
+            // Only set the tags when submitting
+            if (selectedTags.Any())
+            {
+                Transaction.Tags = string.Join(",", selectedTags);
+            }
             await OnSave.InvokeAsync(Transaction);
         }
         catch (Exception ex)

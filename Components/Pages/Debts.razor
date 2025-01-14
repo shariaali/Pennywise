@@ -1,0 +1,212 @@
+﻿@page "/debts"
+@using Pennywise.Components.Shared
+@using Pennywise.Model
+@using Pennywise.Services.Interfaces
+@inject IDebtService DebtService
+@inject ITransactionService TransactionService
+@inject IJSRuntime JS
+
+<div class="debts-page">
+    <div class="header">
+        <h3>Manage Debts</h3>
+        
+    </div>
+
+    <div class="stats-cards">
+        <div class="stat-card">
+            <span class="label">Total Debt Count</span>
+            <span class="value">@_totalCount</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Cleared Debts</span>
+            <span class="value positive">$@_clearedDebt.ToString("N2")</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Pending Debts</span>
+            <span class="value negative">$@_pendingDebt.ToString("N2")</span>
+        </div>
+    </div>
+
+    <div class="transactions-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Source of Debt</th>
+                    <th>Status</th>
+                    <th>Due Date</th>
+                    <th>Amount</th>
+                    <th>Clear Debt</th>
+                    <th>Notes</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (FilteredDebts == null || !FilteredDebts.Any())
+                {
+                    <tr>
+                        <td colspan="7">No debts available</td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var debt in FilteredDebts)
+                    {
+                        <tr>
+                            <td>@debt.Source</td>
+                            <td>
+                                <span class="@(debt.Status == "CLEARED" ? "credit-badge" : "debit-badge")">
+                                    @debt.Status
+                                </span>
+                            </td>
+                            <td>@debt.DueDate.ToShortDateString()</td>
+                            <td>$@debt.Amount.ToString("N2")</td>
+                            <td>
+                                @if (debt.Status == "PENDING")
+                                {
+                                    <button class="btn-clear" @onclick="() => ClearDebt(debt)">Clear</button>
+                                }
+                                else
+                                {
+                                    <span>Clear</span>
+                                }
+                            </td>
+                            <td>@debt.Notes</td>
+                            <td>
+                                <button class="action-menu" @onclick="() => ToggleDropdown(debt.DebtId)">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                                @if (activeDropdown == debt.DebtId)
+                                {
+                                    <div class="dropdown-menu show">
+                                        <div class="dropdown-item" @onclick="() => DeleteDebt(debt.DebtId)">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </div>
+                                    </div>
+                                }
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (showDebtModal)
+{
+    <DebtModal 
+        Debt="currentDebt"
+        OnSave="HandleDebtSave"
+        OnCancel="() => showDebtModal = false" />
+}
+
+@code {
+    private List<Debt> AllDebts = new();
+    private List<Debt> FilteredDebts = new();
+    private string SearchSource = "";
+    private string StatusFilter = "";
+    private DateTime? StartDate;
+    private DateTime? EndDate;
+    private int? activeDropdown;
+    private bool showDebtModal;
+    private Debt currentDebt = new();
+    
+    private decimal _totalDebt;
+    private decimal _clearedDebt;
+    private decimal _pendingDebt;
+    private int _totalCount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDebtsAsync();
+    }
+
+    private async Task LoadDebtsAsync()
+    {
+        try
+        {
+            AllDebts = await DebtService.GetAllDebtsAsync();
+            FilteredDebts = AllDebts;
+            
+            var summary = DebtService.CalculateDebtSummary(AllDebts);
+            _totalDebt = summary.totalDebt;
+            _clearedDebt = summary.clearedDebt;
+            _pendingDebt = summary.pendingDebt;
+            _totalCount = summary.totalCount;
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error loading debts: {ex.Message}");
+        }
+    }
+
+    private void AddDebt()
+    {
+        currentDebt = new Debt 
+        { 
+            DueDate = DateTime.Today,
+            Status = "PENDING"
+        };
+        showDebtModal = true;
+    }
+
+    private async Task HandleDebtSave(Debt debt)
+    {
+        try
+        {
+            if (debt.DebtId == 0)
+            {
+                await DebtService.AddDebtAsync(debt);
+            }
+           
+            showDebtModal = false;
+            await LoadDebtsAsync();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error saving debt: {ex.Message}");
+        }
+    }
+
+    private async Task ClearDebt(Debt debt)
+    {
+        try
+        {
+            await DebtService.ClearDebtAsync(debt.DebtId, debt.Amount);
+            await LoadDebtsAsync();
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error clearing debt: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteDebt(int debtId)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Are you sure you want to delete this debt?");
+        if (confirmed)
+        {
+            try
+            {
+                await DebtService.DeleteDebtAsync(debtId);
+                await LoadDebtsAsync();
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error deleting debt: {ex.Message}");
+            }
+        }
+        activeDropdown = null;
+    }
+
+    private void ToggleDropdown(int debtId)
+    {
+        activeDropdown = activeDropdown == debtId ? null : debtId;
+    }
+
+    private async Task ExportToCsv()
+    {
+        // Implementation for CSV export
+        await JS.InvokeVoidAsync("alert", "Export functionality coming soon");
+    }
+}

@@ -1,0 +1,237 @@
+﻿/* General page styling */
+.debts-page {
+    font-family: Arial, sans-serif;
+    color: #333;
+    margin: 0 auto;
+    padding: 20px;
+    max-width: 1200px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+    .header h3 {
+        font-size: 24px;
+        font-weight: bold;
+    }
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.search-box input {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 200px;
+}
+
+.sort-btn, .btn-add {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #fff;
+    background-color: #007bff;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-add {
+    background-color: #28a745;
+}
+
+    .sort-btn:hover, .btn-add:hover {
+        opacity: 0.9;
+    }
+
+/* Summary cards */
+.stats-cards {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+
+.stat-card {
+    flex: 1;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+    .stat-card .label {
+        font-size: 16px;
+        color: #666;
+    }
+
+    .stat-card .value {
+        font-size: 24px;
+        font-weight: bold;
+        margin-top: 10px;
+    }
+
+.value.positive {
+    color: #28a745;
+}
+
+.value.negative {
+    color: #dc3545;
+}
+
+/* Filters */
+.filters {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.filter-select, .filter-date {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.btn-filter, .btn-clear, .btn-export {
+    padding: 8px 12px;
+    font-size: 14px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #fff;
+    background-color: #007bff;
+}
+
+.btn-clear {
+    background-color: #6c757d;
+}
+
+.btn-export {
+    background-color: #ffc107;
+}
+
+    .btn-filter:hover, .btn-clear:hover, .btn-export:hover {
+        opacity: 0.9;
+    }
+
+/* Transactions table */
+.transactions-table {
+    border-collapse: collapse;
+    width: 100%;
+    background-color: #fff;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+    .transactions-table table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .transactions-table th, .transactions-table td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .transactions-table th {
+        background-color: #f5f5f5;
+        font-size: 14px;
+        color: #555;
+        text-transform: uppercase;
+    }
+
+    .transactions-table td {
+        font-size: 14px;
+    }
+
+    .transactions-table tr:hover {
+        background-color: #f9f9f9;
+    }
+
+.note-column {
+    position: relative;
+}
+
+    .note-column .action-menu {
+        background: none;
+        border: none;
+        cursor: pointer;
+        font-size: 16px;
+        color: #333;
+    }
+
+.dropdown-menu {
+    position: absolute;
+    top: 30px;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: none;
+}
+
+    .dropdown-menu.show {
+        display: block;
+    }
+
+.dropdown-item {
+    padding: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .dropdown-item:hover {
+        background-color: #f5f5f5;
+    }
+
+/* Badges and tags */
+.credit-badge {
+    background-color: #28a745;
+    color: #fff;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.debit-badge {
+    background-color: #dc3545;
+    color: #fff;
+    padding: 4px 8px;
+    font-size: 12px;
+    border-radius: 4px;
+}
+
+.tags-wrapper .tag-badge {
+    display: inline-block;
+    background-color: #007bff;
+    color: #fff;
+    padding: 4px 8px;
+    font-size: 12px;
+    margin-right: 5px;
+    border-radius: 4px;
+}
+
+.tag-badge:hover {
+    background-color: #0056b3;
+}

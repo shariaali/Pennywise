@@ -115,18 +115,16 @@
             selectedTags.Remove(tag);
         else
             selectedTags.Add(tag);
-        
-        Transaction.Tags = string.Join(",", selectedTags);
     }
 
     private async Task AddCustomTag()
     {
         if (!string.IsNullOrWhiteSpace(newTag))
         {
-            await TagService.AddCustomTagAsync(newTag);
+            await TagService.AddCustomTagAsync(newTag.Trim());
             availableTags = await TagService.GetAllTagsAsync();
-            selectedTags.Add(newTag);
-            Transaction.Tags = string.Join(",", selectedTags);
+            selectedTags.Add(newTag.Trim());
+            Transaction.Tags = string.Join(",", selectedTags.Select(t => t.Trim()));
             newTag = "";
         }
     }
@@ -135,6 +133,10 @@
     {
         try
         {
+            if (selectedTags.Any())
+            {
+                Transaction.Tags = string.Join(",", selectedTags);
+            }
             await OnSave.InvokeAsync(Transaction);
         }
         catch (Exception ex)
