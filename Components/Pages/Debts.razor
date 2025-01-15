@@ -1,7 +1,9 @@
 ﻿@page "/debts"
 @using Pennywise.Components.Shared
+@using System.Text
 @using Pennywise.Model
 @using Pennywise.Services.Interfaces
+@using Pennywise.Services
 @inject IDebtService DebtService
 @inject ITransactionService TransactionService
 @inject IJSRuntime JS
@@ -25,6 +27,24 @@
             <span class="label">Pending Debts</span>
             <span class="value negative">$@_pendingDebt.ToString("N2")</span>
         </div>
+    </div>
+
+    <div class="filters">
+        <div class="search-box">
+            <input type="text" @bind="SearchSource" placeholder="Search by Source" />
+        </div>
+        <select @bind="StatusFilter" class="filter-select">
+            <option value="">Status</option>
+            <option value="PENDING">Pending</option>
+            <option value="CLEARED">Cleared</option>
+        </select>
+        <input type="date" @bind="StartDate" class="filter-date" placeholder="Start Date"/>
+        <input type="date" @bind="EndDate" class="filter-date" placeholder="End Date"/>
+        <button class="btn-filter" @onclick="ApplyFiltersAndSearch">Apply Filters</button>
+        <button class="btn-clear" @onclick="ClearFilters">Clear</button>
+        <button class="btn-export" @onclick="ExportToCsv">
+            Export CSV <i class="fas fa-download"></i>
+        </button>
     </div>
 
     <div class="transactions-table">
@@ -206,7 +226,71 @@
 
     private async Task ExportToCsv()
     {
-        // Implementation for CSV export
-        await JS.InvokeVoidAsync("alert", "Export functionality coming soon");
+        try
+        {
+            var debts = FilteredDebts ?? await DebtService.GetAllDebtsAsync();
+            
+            // Create CSV content
+            var csvContent = new StringBuilder();
+            csvContent.AppendLine("Source,Amount,Due Date,Status,Notes,Cleared Date");
+            
+            foreach (var debt in debts)
+            {
+                var line = $"{debt.Source},{debt.Amount:F2},{debt.DueDate:yyyy-MM-dd}," +
+                          $"{debt.Status},{debt.Notes},{debt.ClearedDate:yyyy-MM-dd}";
+                csvContent.AppendLine(line);
+            }
+
+            // Convert to bytes
+            var bytes = Encoding.UTF8.GetBytes(csvContent.ToString());
+            
+            // Create file name with timestamp
+            var fileName = $"debts_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            
+            // Trigger download using JS interop
+            await JS.InvokeVoidAsync("downloadFile", fileName, "text/csv", Convert.ToBase64String(bytes));
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error exporting debts: {ex.Message}");
+        }
+    }
+
+    private async Task ApplyFiltersAndSearch()
+    {
+        FilteredDebts = AllDebts;
+
+        // Apply source search
+        if (!string.IsNullOrEmpty(SearchSource))
+        {
+            FilteredDebts = FilteredDebts.Where(d => 
+                d.Source.Contains(SearchSource, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrEmpty(StatusFilter))
+        {
+            FilteredDebts = FilteredDebts.Where(d => d.Status == StatusFilter).ToList();
+        }
+
+        // Apply date range filter
+        if (StartDate.HasValue)
+        {
+            FilteredDebts = FilteredDebts.Where(d => d.DueDate >= StartDate.Value).ToList();
+        }
+
+        if (EndDate.HasValue)
+        {
+            FilteredDebts = FilteredDebts.Where(d => d.DueDate <= EndDate.Value).ToList();
+        }
+    }
+
+    private async Task ClearFilters()
+    {
+        SearchSource = "";
+        StatusFilter = "";
+        StartDate = null;
+        EndDate = null;
+        await LoadDebtsAsync();
     }
 }

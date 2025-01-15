@@ -7,6 +7,7 @@
 @inject IUserService UserService
 @inject ITransactionService TransactionService
 @inject IJSRuntime JS
+@inject IDebtService DebtService
 
 <div class="dashboard-page">
     <h2>Hello, @_loggedInUsername!</h2>
@@ -142,11 +143,15 @@
         var transactions = await TransactionService.LoadTransactionsAsync();
         var sums = TransactionService.CalculateTransactionSums(transactions);
         
+        // Load debt data
+        var debts = await DebtService.GetAllDebtsAsync();
+        var debtSummary = DebtService.CalculateDebtSummary(debts);
+        
         _totalInflows = sums.totalInflows;
         _totalOutflows = sums.totalOutflows;
-        _totalDebt = sums.totalDebt;
-        _totalClearedDebt = sums.totalClearedDebt;
-        _remainingDebt = sums.remainingDebt;
+        _totalDebt = debtSummary.totalDebt;
+        _totalClearedDebt = debtSummary.clearedDebt;
+        _remainingDebt = debtSummary.pendingDebt;
         _balance = sums.balance;
         _isSufficientBalance = sums.isSufficientBalance;
         
@@ -186,11 +191,15 @@
             var transactions = await TransactionService.LoadTransactionsAsync();
             var sums = TransactionService.CalculateTransactionSums(transactions);
             
+            // Refresh debt data
+            var debts = await DebtService.GetAllDebtsAsync();
+            var debtSummary = DebtService.CalculateDebtSummary(debts);
+            
             _totalInflows = sums.totalInflows;
             _totalOutflows = sums.totalOutflows;
-            _totalDebt = sums.totalDebt;
-            _totalClearedDebt = sums.totalClearedDebt;
-            _remainingDebt = sums.remainingDebt;
+            _totalDebt = debtSummary.totalDebt;
+            _totalClearedDebt = debtSummary.clearedDebt;
+            _remainingDebt = debtSummary.pendingDebt;
             _balance = sums.balance;
             
             _elements = transactions.OrderByDescending(t => t.Amount).Take(4);

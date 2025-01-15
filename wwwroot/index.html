@@ -26,7 +26,19 @@
     </div>
 
     <script src="_framework/blazor.webview.js" autostart="false"></script>
+    
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+
+    <script>
+        window.downloadFile = function (fileName, contentType, base64String) {
+            const link = document.createElement('a');
+            link.download = fileName;
+            link.href = `data:${contentType};base64,${base64String}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+    </script>
 
 </body>
 

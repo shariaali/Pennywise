@@ -1,6 +1,7 @@
 ﻿@using System
 @using Pennywise.Components.Shared
 @page "/transactions"
+@using System.Text
 @using Pennywise.Model;
 @using Pennywise.Services.Interfaces;
 @inject NavigationManager Nav
@@ -332,8 +333,34 @@
 
     private async Task ExportToCsv()
     {
-        // Implementation for CSV export
-        await JS.InvokeVoidAsync("alert", "Export functionality coming soon");
+        try
+        {
+            var transactions = FilteredTransactions ?? await TransactionService.LoadTransactionsAsync();
+            
+            // Create CSV content
+            var csvContent = new StringBuilder();
+            csvContent.AppendLine("Title,Amount,Type,Date,Tags,Note");
+            
+            foreach (var transaction in transactions)
+            {
+                var line = $"{transaction.Title},{transaction.Amount:F2},{transaction.Type}," +
+                          $"{transaction.Date:yyyy-MM-dd},{transaction.Tags},{transaction.Note}";
+                csvContent.AppendLine(line);
+            }
+
+            // Convert to bytes
+            var bytes = Encoding.UTF8.GetBytes(csvContent.ToString());
+            
+            // Create file name with timestamp
+            var fileName = $"transactions_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            
+            // Trigger download using JS interop
+            await JS.InvokeVoidAsync("downloadFile", fileName, "text/csv", Convert.ToBase64String(bytes));
+        }
+        catch (Exception ex)
+        {
+            await JS.InvokeVoidAsync("alert", $"Error exporting transactions: {ex.Message}");
+        }
     }
 
     private void AddTransaction()
