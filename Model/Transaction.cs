@@ -22,8 +22,7 @@ namespace Pennywise.Model
         [Required(ErrorMessage = "Type is required")]
         public string Type { get; set; }  // Type of transaction: Inflow, Outflow, Debt
 
-        [Required(ErrorMessage = "Date is required")]
-        public DateTime? Date { get; set; }  // Date of the transaction
+        public DateTime Date { get; set; }
 
         public string Tags { get; set; }  // Comma separated list of tags
         public string Note { get; set; }  // Additional information or description about the transaction

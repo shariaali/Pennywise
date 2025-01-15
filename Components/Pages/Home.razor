@@ -10,28 +10,46 @@
 @inject IDebtService DebtService
 
 <div class="dashboard-page">
-    <h2>Hello, @_loggedInUsername!</h2>
+    
+    <div class="header-section">
+        <h2>@_message</h2>
+        <div class="date-filters">
+            <div class="form-field">
+                <label>Start Date:  </label>
+                <input type="date" @bind="StartDate" class="filter-date"/>
+            </div>
+            <div class="form-field">
+                <label>End Date:  </label>
+                <input type="date" @bind="EndDate" class="filter-date"/>
+            </div>
+            <button class="btn-filter" @onclick="ApplyDateFilter">Apply</button>
+        </div>
+    </div>
 
     <div class="stats-overview">
         <div class="stat-card">
             <span class="label">Balance</span>
-            <span class="value balance">$@_balance.ToString("N2")</span>
+            <span class="value balance">@FormatAmount(_balance)</span>
         </div>
         <div class="stat-card">
             <span class="label">Incomes</span>
-            <span class="value income">$@_totalInflows.ToString("N2")</span>
+            <span class="value income">@FormatAmount(_totalInflows)</span>
         </div>
         <div class="stat-card">
             <span class="label">Expenses</span>
-            <span class="value expense">$@_totalOutflows.ToString("N2")</span>
+            <span class="value expense">@FormatAmount(_totalOutflows)</span>
+        </div>
+        <div class="stat-card">
+            <span class="label">Total Debt</span>
+            <span class="value debt">@FormatAmount(_totalDebt)</span>
         </div>
         <div class="stat-card">
             <span class="label">Cleared Debts</span>
-            <span class="value cleared">$@_totalClearedDebt.ToString("N2")</span>
+            <span class="value cleared">@FormatAmount(_totalClearedDebt)</span>
         </div>
         <div class="stat-card">
             <span class="label">Pending Debts</span>
-            <span class="value pending">$@_remainingDebt.ToString("N2")</span>
+            <span class="value pending">@FormatAmount(_remainingDebt)</span>
         </div>
     </div>
 
@@ -62,35 +80,105 @@
     <div class="dashboard-grid">
         <div class="transactions-section">
             <div class="section-header">
-                <h3>Top transactions</h3>
-                <button class="sort-btn">
-                    <i class="fas fa-sort"></i> Highest to Lowest
-                </button>
+                <h3>Highest Transactions</h3>
             </div>
             <div class="transactions-list">
-                @foreach (var transaction in _elements)
+                @foreach (var transaction in _highestTransactions)
                 {
                     <div class="transaction-item">
-                        <div class="transaction-icon @(transaction.Type.ToLower())">
-                            <i class="fas @(transaction.Type == "Inflow" ? "fa-arrow-up" : "fa-arrow-down")"></i>
+                        <div class="transaction-icon @GetTransactionClass(transaction)">
+                            <i class="fas @GetTransactionIcon(transaction)"></i>
                         </div>
                         <div class="transaction-details">
                             <span class="transaction-title">@transaction.Title</span>
-                            @* <span class="transaction-date">@transaction.Date.ToString("MMM dd, yyyy")</span> *@
+                            <span class="transaction-date">@transaction.Date.ToShortDateString()</span>
                         </div>
-                        <span class="transaction-amount @(transaction.Type.ToLower())">
-                            @(transaction.Type == "Inflow" ? "+" : "-")$@Math.Abs(transaction.Amount).ToString("N2")
+                        <span class="transaction-amount @GetTransactionClass(transaction)">
+                            @(transaction.Type == "Inflow" ? "+" : "-")@FormatAmount(Math.Abs(transaction.Amount))
                         </span>
                     </div>
                 }
             </div>
         </div>
 
-        <div class="chart-section">
-            <MudChart ChartType="ChartType.Line" ChartSeries="@Series" @bind-SelectedIndex="Index"
-                     XAxisLabels="@XAxisLabels" Width="100%" Height="350px" />
+        <div class="expenses-chart">
+            <h3>Spending by Category</h3>
+            <MudChart ChartType="ChartType.Donut" 
+                     LegendPosition="Position.Bottom" 
+                     Width="300px" 
+                     Height="300px" 
+                     InputData="@data" 
+                     InputLabels="@labels">
+            </MudChart>
+        </div>
+
+        <div class="transactions-section">
+            <div class="section-header">
+                <h3>Lowest Transactions</h3>
+            </div>
+            <div class="transactions-list">
+                @foreach (var transaction in _lowestTransactions)
+                {
+                    <div class="transaction-item">
+                        <div class="transaction-icon @GetTransactionClass(transaction)">
+                            <i class="fas @GetTransactionIcon(transaction)"></i>
+                        </div>
+                        <div class="transaction-details">
+                            <span class="transaction-title">@transaction.Title</span>
+                            <span class="transaction-date">@transaction.Date.ToShortDateString()</span>
+                        </div>
+                        <span class="transaction-amount @GetTransactionClass(transaction)">
+                            @(transaction.Type == "Inflow" ? "+" : "-")@FormatAmount(Math.Abs(transaction.Amount))
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+
+        
+
+
+        <div class="pending-debts">
+            <div class="section-header">
+                <h3>Pending debts</h3>
+                <button class="view-all" @onclick="NavigateToDebts">View All Debts</button>
+            </div>
+            <div class="debts-list">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Debt Source</th>
+                            <th>Payment Due Date</th>
+                            <th>Amount</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (_pendingDebts == null || !_pendingDebts.Any())
+                        {
+                            <tr>
+                                <td colspan="4">No pending debts</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var debt in _pendingDebts)
+                            {
+                                <tr>
+                                    <td>@debt.Source</td>
+                                    <td>@debt.DueDate.ToString("yyyy/MM/dd")</td>
+                                    <td>@FormatAmount(debt.Amount)</td>
+                                    
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
+
+    
 </div>
 
 @if (showTransactionModal)
@@ -98,19 +186,15 @@
     <TransactionModal 
         Transaction="currentTransaction"
         OnSave="HandleTransactionSave"
-        OnCancel="() => showTransactionModal = false" />
+        OnCancel="() => showTransactionModal = false"
+        CurrentBalance="_balance" />
 }
 
 @code {
     private int Index = -1;
-    public ChartOptions Options = new ChartOptions();
-    public List<ChartSeries> Series = new List<ChartSeries>()
-    {
-        new ChartSeries() { Name = "Income", Data = new double[] { 90, 79, 72, 69, 62, 62, 55, 65, 70 } },
-        new ChartSeries() { Name = "Expense", Data = new double[] { 10, 41, 35, 51, 49, 62, 69, 91, 148 } },
-    };
-    public string[] XAxisLabels = { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep" };
+    
 
+    public Position LegendPosition { get; set; } = Position.Bottom;
     private bool _hidePosition;
     private bool _loading;
     private decimal _totalInflows;
@@ -121,12 +205,24 @@
     private decimal _balance;
     private bool _isSufficientBalance;
 
-    private IEnumerable<Transaction> _elements = new List<Transaction>();
     private string _loggedInUsername = string.Empty;
     private string _message = string.Empty;
 
     private bool showTransactionModal;
     private Transaction currentTransaction = new();
+
+    private List<Debt> _pendingDebts = new();
+
+    private double[] data;
+    private string[] labels;
+
+    private IEnumerable<Transaction> _highestTransactions = new List<Transaction>();
+    private IEnumerable<Transaction> _lowestTransactions = new List<Transaction>();
+
+    private DateTime? StartDate { get; set; }
+    private DateTime? EndDate { get; set; }
+
+    private string PreferredCurrency => UserService.PreferredCurrency;
 
     protected override async Task OnInitializedAsync()
     {
@@ -147,6 +243,12 @@
         var debts = await DebtService.GetAllDebtsAsync();
         var debtSummary = DebtService.CalculateDebtSummary(debts);
         
+        // Load pending debts
+        _pendingDebts = debts.Where(d => d.Status == "PENDING")
+                            .OrderBy(d => d.DueDate)
+                            .Take(5)
+                            .ToList();
+        
         _totalInflows = sums.totalInflows;
         _totalOutflows = sums.totalOutflows;
         _totalDebt = debtSummary.totalDebt;
@@ -155,7 +257,19 @@
         _balance = sums.balance;
         _isSufficientBalance = sums.isSufficientBalance;
         
-        _elements = transactions.OrderByDescending(t => t.Amount).Take(4);
+        // Load highest and lowest transactions
+        _highestTransactions = transactions
+            .OrderByDescending(t => Math.Abs(t.Amount))
+            .Take(5);
+        
+        _lowestTransactions = transactions
+            .OrderBy(t => Math.Abs(t.Amount))
+            .Take(5);
+
+        // Calculate tag percentages for the donut chart
+        var chartData = CalculateTagPercentages(transactions);
+        data = chartData.data;
+        labels = chartData.labels;
     }
 
     private void AddIncome()
@@ -190,10 +304,17 @@
             // Refresh data
             var transactions = await TransactionService.LoadTransactionsAsync();
             var sums = TransactionService.CalculateTransactionSums(transactions);
-            
-            // Refresh debt data
             var debts = await DebtService.GetAllDebtsAsync();
             var debtSummary = DebtService.CalculateDebtSummary(debts);
+            
+            // Update both transaction lists
+            _highestTransactions = transactions
+                .OrderByDescending(t => Math.Abs(t.Amount))
+                .Take(5);
+            
+            _lowestTransactions = transactions
+                .OrderBy(t => Math.Abs(t.Amount))
+                .Take(5);
             
             _totalInflows = sums.totalInflows;
             _totalOutflows = sums.totalOutflows;
@@ -201,8 +322,7 @@
             _totalClearedDebt = debtSummary.clearedDebt;
             _remainingDebt = debtSummary.pendingDebt;
             _balance = sums.balance;
-            
-            _elements = transactions.OrderByDescending(t => t.Amount).Take(4);
+
         }
         catch (Exception ex)
         {
@@ -214,4 +334,141 @@
     {
         Nav.NavigateTo("/debts");
     }
+
+    private (double[] data, string[] labels) CalculateTagPercentages(IEnumerable<Transaction> transactions)
+    {
+        if (transactions == null || !transactions.Any())
+            return (new double[] { 100 }, new string[] { "No Data" });
+
+        // Get all unique tags from transactions
+        var tagAmounts = new Dictionary<string, decimal>();
+        
+        foreach (var transaction in transactions)
+        {
+            if (string.IsNullOrEmpty(transaction.Tags))
+                continue;
+
+            var tags = transaction.Tags.Split(',').Select(t => t.Trim());
+            foreach (var tag in tags)
+            {
+                if (tagAmounts.ContainsKey(tag))
+                    tagAmounts[tag] += Math.Abs(transaction.Amount);
+                else
+                    tagAmounts[tag] = Math.Abs(transaction.Amount);
+            }
+        }
+
+        // Calculate percentages
+        var totalAmount = tagAmounts.Values.Sum();
+        var percentages = tagAmounts
+            .OrderByDescending(x => x.Value)
+            .Take(5) // Take top 5 tags for better visualization
+            .ToList();
+
+        var data = percentages.Select(x => (double)((x.Value / totalAmount) * 100)).ToArray();
+        var labels = percentages.Select(x => x.Key).ToArray();
+
+        return (data, labels);
+    }
+
+    private string GetTransactionClass(Transaction transaction)
+    {
+        return transaction.Type switch
+        {
+            "Inflow" => "inflow",
+            "DEBT" => "outflow",
+            _ => "outflow"
+        };
+    }
+
+    private string GetTransactionIcon(Transaction transaction)
+    {
+        return transaction.Type switch
+        {
+            "Inflow" => "fa-plus",
+            "DEBT" => "fa-minus",
+            _ => "fa-minus"
+        };
+    }
+
+    private async Task ApplyDateFilter()
+    {
+        var transactions = await TransactionService.LoadTransactionsAsync();
+        var debts = await DebtService.GetAllDebtsAsync();
+
+        if (StartDate.HasValue && EndDate.HasValue)
+        {
+            transactions = transactions.Where(t => t.Date >= StartDate && t.Date <= EndDate).ToList();
+            debts = debts.Where(d => d.DueDate >= StartDate && d.DueDate <= EndDate).ToList();
+        }
+
+        var sums = TransactionService.CalculateTransactionSums(transactions);
+        var debtSummary = DebtService.CalculateDebtSummary(debts);
+        
+        var combinedSums = (
+            totalInflows: sums.totalInflows,
+            totalOutflows: sums.totalOutflows,
+            totalDebt: debtSummary.totalDebt,
+            totalClearedDebt: debtSummary.clearedDebt,
+            remainingDebt: debtSummary.pendingDebt,
+            balance: sums.balance,
+            isSufficientBalance: sums.isSufficientBalance
+        );
+        
+        UpdateDashboardData(transactions, combinedSums, debts, debtSummary);
+    }
+
+    private void UpdateDashboardData(
+        IEnumerable<Transaction> transactions, 
+        (decimal totalInflows, decimal totalOutflows, decimal totalDebt, decimal totalClearedDebt, 
+         decimal remainingDebt, decimal balance, bool isSufficientBalance) sums,
+        List<Debt> debts, 
+        (decimal totalDebt, decimal clearedDebt, decimal pendingDebt, int totalCount) debtSummary)
+    {
+        _totalInflows = sums.totalInflows;
+        _totalOutflows = sums.totalOutflows;
+        _totalDebt = debtSummary.totalDebt;
+        _totalClearedDebt = debtSummary.clearedDebt;
+        _remainingDebt = debtSummary.pendingDebt;
+        _balance = sums.balance;
+        _isSufficientBalance = sums.isSufficientBalance;
+        
+        _highestTransactions = transactions
+            .OrderByDescending(t => Math.Abs(t.Amount))
+            .Take(5)
+            .ToList();
+        
+        _lowestTransactions = transactions
+            .OrderBy(t => Math.Abs(t.Amount))
+            .Take(5)
+            .ToList();
+        
+        _pendingDebts = debts.Where(d => d.Status == "PENDING")
+            .OrderBy(d => d.DueDate)
+            .Take(5)
+            .ToList();
+
+        var chartData = CalculateTagPercentages(transactions);
+        data = chartData.data;
+        labels = chartData.labels;
+    }
+
+    private string GetCurrencySymbol()
+    {
+        switch (PreferredCurrency)
+        {
+            case "USD":
+                return "$";
+            case "NPR":
+                return "Rs.";
+            default:
+                return "$";  // Default to USD if no currency is selected
+        }
+    }
+
+    // Helper to format amounts with the currency symbol
+    private string FormatAmount(decimal amount)
+    {
+        return $"{GetCurrencySymbol()} {amount:N2}";
+    } 
 }

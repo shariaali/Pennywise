@@ -10,8 +10,10 @@ namespace Pennywise.Services.Interfaces
     public interface IUserService
     {
         bool Login(User user);
+        string PreferredCurrency { get; }
         bool IsLoggedIn { get; }
         string LoggedInUser { get; }
         void Logout();
+        
     }
 }

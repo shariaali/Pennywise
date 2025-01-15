@@ -115,17 +115,19 @@ public class TransactionService : ITransactionService
                 case "Outflow":
                     totalOutflows += transaction.Amount;
                     break;
-                case "Debt":
-                    totalDebt += transaction.Amount;
+                case "DEBT" when transaction.Title?.StartsWith("Debt from") == true:
+                    totalDebt += transaction.Amount;  // Add to total debt and inflows when debt is received
+                    totalInflows += transaction.Amount;
                     break;
-                case "Cleared":
+                case "DEBT":  // This is for debt clearing transactions
+                    totalOutflows += transaction.Amount;
                     totalClearedDebt += transaction.Amount;
                     break;
             }
         }
 
         decimal remainingDebt = totalDebt - totalClearedDebt;
-        decimal balance = totalInflows - totalOutflows - remainingDebt;
+        decimal balance = totalInflows - totalOutflows;
         bool isSufficientBalance = balance >= 0;
 
         return (totalInflows, totalOutflows, totalDebt, totalClearedDebt, remainingDebt, balance, isSufficientBalance);

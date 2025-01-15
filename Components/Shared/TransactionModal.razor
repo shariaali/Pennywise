@@ -30,12 +30,14 @@
                             <option value="Outflow">Expense</option>
                             <option value="Inflow">Income</option>
                         </select>
+                        <ValidationMessage For="@(() => Transaction.Type)" />
                     </div>
 
                     <div class="form-field">
                         <label>Amount</label>
                         <input type="number" class="input-field" @bind="Transaction.Amount" 
                                placeholder="$XX.XX" />
+                        <ValidationMessage For="@(() => Transaction.Amount)" />
                     </div>
                 </div>
 
@@ -89,6 +91,7 @@
     [Parameter] public Transaction Transaction { get; set; } = new();
     [Parameter] public EventCallback<Transaction> OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public decimal CurrentBalance { get; set; }
 
     private List<string> availableTags = new();
     private List<string> selectedTags = new();
@@ -115,16 +118,18 @@
             selectedTags.Remove(tag);
         else
             selectedTags.Add(tag);
+        
+        Transaction.Tags = string.Join(",", selectedTags);
     }
 
     private async Task AddCustomTag()
     {
         if (!string.IsNullOrWhiteSpace(newTag))
         {
-            await TagService.AddCustomTagAsync(newTag.Trim());
+            await TagService.AddCustomTagAsync(newTag);
             availableTags = await TagService.GetAllTagsAsync();
-            selectedTags.Add(newTag.Trim());
-            Transaction.Tags = string.Join(",", selectedTags.Select(t => t.Trim()));
+            selectedTags.Add(newTag);
+            Transaction.Tags = string.Join(",", selectedTags);
             newTag = "";
         }
     }
@@ -133,10 +138,12 @@
     {
         try
         {
-            if (selectedTags.Any())
+            if (Transaction.Type == "Outflow" && Transaction.Amount > CurrentBalance)
             {
-                Transaction.Tags = string.Join(",", selectedTags);
+                await JS.InvokeVoidAsync("alert", $"Insufficient balance. Your current balance is {CurrentBalance:C2}");
+                return;
             }
+
             await OnSave.InvokeAsync(Transaction);
         }
         catch (Exception ex)

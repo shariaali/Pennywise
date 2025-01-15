@@ -22,6 +22,8 @@ namespace Pennywise
             builder.Services.AddScoped<ITransactionService, TransactionService>();
             builder.Services.AddScoped<ITagService, TagService>();
             builder.Services.AddScoped<IDebtService, DebtService>();
+            builder.Services.AddScoped<IFileExportService, FileExportService>();
+            
             builder.Services.AddMudServices();
 
 #if DEBUG

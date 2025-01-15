@@ -8,6 +8,8 @@
 @inject ITransactionService TransactionService
 @inject ITagService TagService
 @inject IJSRuntime JS
+@inject IFileExportService FileExportService
+@inject IUserService UserService
 
 <div class="transactions-page">
     <div class="header">
@@ -15,12 +17,12 @@
             <h3>View all transactions</h3>
         </div>
         <div class="actions">
-            <div class="search-box">
-                <input type="text" @bind="SearchTitle" placeholder="Search" />
-            </div>
             <button class="sort-btn" @onclick="ToggleSort">
                 <i class="fas fa-sort"></i>
                 @(IsAscending ? "Oldest First" : "Newest First")
+            </button>
+            <button class="btn-export" @onclick="ExportToCsv">
+                Export CSV <i class="fas fa-download"></i>
             </button>
             <button class="btn-add" @onclick="AddTransaction">
                 Add Transaction <i class="fas fa-plus"></i>
@@ -35,19 +37,23 @@
         </div>
         <div class="stat-card">
             <span class="label">Total Income</span>
-            <span class="value income">$@_totalInflows</span>
+            <span class="value income">@FormatAmount(_totalInflows)</span>
         </div>
         <div class="stat-card">
             <span class="label">Total Expense</span>
-            <span class="value expense">$@_totalOutflows</span>
+            <span class="value expense">@FormatAmount(_totalOutflows)</span>
         </div>
     </div>
 
     <div class="filters">
+        <div class="search-box">
+            <input type="text" @bind="SearchTitle" placeholder="Search by Title" />
+        </div>
         <select @bind="FilterType" class="filter-select">
             <option value="">Transaction type</option>
             <option value="Inflow">Income</option>
             <option value="Outflow">Expense</option>
+            <option value="DEBT">Debt</option>
         </select>
         <select @bind="FilterTags" class="filter-select">
             <option value="">Tags</option>
@@ -56,13 +62,16 @@
                 <option value="@tag">@tag</option>
             }
         </select>
-        <input type="date" @bind="StartDate" class="filter-date" placeholder="Start Date"/>
-        <input type="date" @bind="EndDate" class="filter-date" placeholder="End Date"/>
+        <div class="form-field">
+            <label>Start Date</label>
+            <input type="date" @bind="StartDate" class="filter-date"/>
+        </div>
+        <div class="form-field">
+            <label>End Date</label>
+            <input type="date" @bind="EndDate" class="filter-date"/>
+        </div>
         <button class="btn-filter" @onclick="ApplyFiltersAndSearch">Apply Filters</button>
         <button class="btn-clear" @onclick="ClearFilters">Clear</button>
-        <button class="btn-export" @onclick="ExportToCsv">
-            Export CSV <i class="fas fa-download"></i>
-        </button>
     </div>
 
     <div class="transactions-table">
@@ -106,7 +115,7 @@
                                         _ => "debit-amount"
                                     };
                                 }
-                                <span class="@amountClass">@amountPrefix$@Math.Abs(transaction.Amount)</span>
+                                <span class="@amountClass">@amountPrefix@FormatAmount(Math.Abs(transaction.Amount))</span>
                             </td>
                             <td>
                                 @{
@@ -126,7 +135,7 @@
                                 }
                                 <span class="@badgeClass">@displayType</span>
                             </td>
-                            <td>@(transaction.Date?.ToShortDateString() ?? "N/A")</td>
+                            <td>@transaction.Date.ToShortDateString()</td>
                             <td>
                                 <div class="tags-wrapper">
                                     @foreach (var tag in transaction.Tags?.Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>())
@@ -168,15 +177,17 @@
     <TransactionModal 
         Transaction="currentTransaction"
         OnSave="HandleTransactionSave"
-        OnCancel="() => showTransactionModal = false" />
+        OnCancel="() => showTransactionModal = false"
+        CurrentBalance="_balance" />
 }
 
 @if (showEditModal)
 {
     <EditTransactionModal 
         Transaction="selectedTransaction"
-        OnSave="HandleEditTransactionSave"
-        OnCancel="() => showEditModal = false" />
+        OnSave="HandleTransactionSave"
+        OnCancel="() => showEditModal = false"
+        CurrentBalance="_balance" />
 }
 
 @code {
@@ -184,6 +195,7 @@
     private List<Transaction> FilteredTransactions = new List<Transaction>();
     private decimal _totalInflows;
     private decimal _totalOutflows;
+    private decimal _balance;
 
     private string SearchTitle;
     private string FilterType;
@@ -208,6 +220,8 @@
     private bool showEditModal = false;
     private Transaction selectedTransaction;
 
+    private string PreferredCurrency => UserService.PreferredCurrency;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -219,6 +233,7 @@
             var sums = TransactionService.CalculateTransactionSums(transactions);
             _totalInflows = sums.totalInflows;
             _totalOutflows = sums.totalOutflows;
+            _balance = sums.balance;
         }
         catch (Exception ex)
         {
@@ -277,14 +292,43 @@
 
     private async Task ApplyFiltersAndSearch()
     {
-        var filtered = await TransactionService.FilterTransactionsAsync(StartDate, EndDate, FilterType, FilterTags);
+        FilteredTransactions = transactions;
+
+        // Apply title search
         if (!string.IsNullOrEmpty(SearchTitle))
         {
-            filtered = filtered.Where(t => t.Title.Contains(SearchTitle, StringComparison.OrdinalIgnoreCase)).ToList();
+            FilteredTransactions = FilteredTransactions.Where(t => 
+                t.Title.Contains(SearchTitle, StringComparison.OrdinalIgnoreCase)).ToList();
         }
-        FilteredTransactions = IsAscending 
-            ? filtered.OrderBy(t => t.Date).ToList()
-            : filtered.OrderByDescending(t => t.Date).ToList();
+
+        // Apply type filter
+        if (!string.IsNullOrEmpty(FilterType))
+        {
+            FilteredTransactions = FilteredTransactions.Where(t => t.Type == FilterType).ToList();
+        }
+
+        // Apply tags filter
+        if (!string.IsNullOrEmpty(FilterTags))
+        {
+            FilteredTransactions = FilteredTransactions.Where(t => 
+                t.Tags != null && t.Tags.Contains(FilterTags)).ToList();
+        }
+
+        // Apply date range filter
+        if (StartDate.HasValue)
+        {
+            FilteredTransactions = FilteredTransactions.Where(t => t.Date >= StartDate.Value).ToList();
+        }
+
+        if (EndDate.HasValue)
+        {
+            FilteredTransactions = FilteredTransactions.Where(t => t.Date <= EndDate.Value).ToList();
+        }
+
+        // Update totals based on filtered transactions
+        var sums = TransactionService.CalculateTransactionSums(FilteredTransactions);
+        _totalInflows = sums.totalInflows;
+        _totalOutflows = sums.totalOutflows;
     }
     private async Task ApplySorting()
     {
@@ -343,19 +387,13 @@
             
             foreach (var transaction in transactions)
             {
-                var line = $"{transaction.Title},{transaction.Amount:F2},{transaction.Type}," +
+                var line = $"{transaction.Title},{FormatAmount(transaction.Amount)},{transaction.Type}," +
                           $"{transaction.Date:yyyy-MM-dd},{transaction.Tags},{transaction.Note}";
                 csvContent.AppendLine(line);
             }
 
-            // Convert to bytes
-            var bytes = Encoding.UTF8.GetBytes(csvContent.ToString());
-            
-            // Create file name with timestamp
             var fileName = $"transactions_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-            
-            // Trigger download using JS interop
-            await JS.InvokeVoidAsync("downloadFile", fileName, "text/csv", Convert.ToBase64String(bytes));
+            await FileExportService.ExportToCsvAsync(csvContent.ToString(), fileName);
         }
         catch (Exception ex)
         {
@@ -421,4 +459,25 @@
             ? FilteredTransactions.OrderBy(t => t.Date).ToList()
             : FilteredTransactions.OrderByDescending(t => t.Date).ToList();
     }
+
+    private string GetCurrencySymbol()
+    {
+        switch (PreferredCurrency)
+        {
+            case "USD":
+                return "$";
+            case "NPR":
+                return "Rs.";
+            default:
+                return "$";  // Default to USD if no currency is selected
+        }
+    }
+
+    // Helper to format amounts with the currency symbol
+    private string FormatAmount(decimal amount)
+    {
+        return $"{GetCurrencySymbol()} {amount:N2}";
+    } 
 }
+
+

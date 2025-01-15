@@ -135,7 +135,7 @@ td {
 .btn-edit:hover { color: #007bff; }
 .btn-delete:hover { color: #dc3545; }
 
-.btn-filter, .btn-clear, .btn-export {
+.btn-filter, .btn-clear, .btn-export{
     padding: 0.75rem 1.5rem;
     border-radius: 8px;
     border: none;
@@ -169,7 +169,12 @@ td {
 }
 
 .btn-export:hover {
-    background-color: #218838;
+    opacity: 0.9;
+}
+
+.btn-export{
+    background-color: #ffc107;
+    color: #000;
 }
 
 .actions-dropdown {
@@ -263,8 +268,8 @@ td {
 }
 
 .debt-badge {
-    background-color: #ff9800;
-    color: white;
+    background-color: rgba(255, 152, 0, 0.1);
+    color: #ff9800;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
@@ -300,8 +305,8 @@ td {
 }
 
 .debt-badge {
-    background-color: #ff9800;
-    color: white;
+    background-color: rgba(255, 152, 0, 0.1);
+    color: #ff9800;
     padding: 4px 8px;
     border-radius: 4px;
     font-size: 12px;
@@ -339,5 +344,24 @@ td {
     border-radius: 12px;
     font-size: 12px;
     white-space: nowrap;
+}
+
+.filters .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filters .form-field label {
+    font-size: 14px;
+    color: #888;
+}
+
+.filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
 }
 

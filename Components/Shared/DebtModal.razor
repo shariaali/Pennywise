@@ -6,46 +6,48 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Add Debt</h3>
-                <button class="close-button" @onclick="OnCancel">&times;</button>
+                <h3>Add debt</h3>
+                <button class="close-button" @onclick="OnCancel">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
 
             <EditForm Model="@Debt" OnValidSubmit="HandleSubmit">
                 <DataAnnotationsValidator />
 
                 <div class="form-field">
-                    <label>Source of Debt</label>
+                    <label>Source of Debt:</label>
                     <input type="text" class="input-field" @bind="Debt.Source" 
-                           placeholder="Enter the source of debt" />
+                           placeholder="Add the source of your debt" />
                     <ValidationMessage For="@(() => Debt.Source)" />
                 </div>
 
                 <div class="form-row">
                     <div class="form-field">
-                        <label>Amount</label>
+                        <label>Payment Due Date:</label>
+                        <div class="date-input-wrapper">
+                            <input type="date" class="input-field" @bind="Debt.DueDate" />
+                           
+                        </div>
+                        <ValidationMessage For="@(() => Debt.DueDate)" />
+                    </div>
+
+                    <div class="form-field">
+                        <label>Amount:</label>
                         <input type="number" step="0.01" class="input-field" @bind="Debt.Amount" 
                                placeholder="$XX.XX" />
                         <ValidationMessage For="@(() => Debt.Amount)" />
                     </div>
-
-                    <div class="form-field">
-                        <label>Due Date</label>
-                        <input type="date" class="input-field" @bind="Debt.DueDate" />
-                        <ValidationMessage For="@(() => Debt.DueDate)" />
-                    </div>
                 </div>
 
                 <div class="form-field">
-                    <label>Notes (Optional)</label>
+                    <label>Notes (Optional):</label>
                     <textarea class="input-field" @bind="Debt.Notes" 
-                             placeholder="Add any additional notes"></textarea>
+                             placeholder="Add an optional memo about your debt"></textarea>
                 </div>
 
                 <div class="modal-footer">
-                    <button type="button" class="btn-secondary" @onclick="OnCancel">Cancel</button>
-                    <button type="submit" class="btn-primary">
-                        Add Debt
-                    </button>
+                    <button type="submit" class="btn-primary">ADD DEBT</button>
                 </div>
             </EditForm>
         </div>

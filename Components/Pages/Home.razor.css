@@ -1,6 +1,6 @@
 .stats-overview {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     margin-bottom: 2rem;
 }
@@ -29,6 +29,10 @@
 .value.expense { color: #f44336; }
 .value.cleared { color: #4CAF50; }
 .value.pending { color: #FF9800; }
+.value.debt {
+    color: #ff9800;  /* Orange color for debt */
+    font-weight: 600;
+}
 
 .action-buttons {
     display: grid;
@@ -94,8 +98,9 @@
 
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 1fr 1fr;
     gap: 2rem;
+    margin-bottom: 2rem;
 }
 
 .transactions-section {
@@ -176,4 +181,131 @@
 h2 {
     margin-bottom: 2rem;
     font-weight: 500;
+}
+
+.pending-debts {
+    background: #1E1E1E;
+    border-radius: 12px;
+    padding: 1.5rem;
+
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h3 {
+    font-size: 1rem;
+    color: #fff;
+    margin: 0;
+}
+
+.view-all {
+    background: none;
+    border: none;
+    color: #007FFF;
+    cursor: pointer;
+    font-size: 0.875rem;
+}
+
+.debts-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.debts-list th {
+    text-align: left;
+    padding: 1rem;
+    color: #888;
+    font-weight: normal;
+    border-bottom: 1px solid #333;
+}
+
+.debts-list td {
+    padding: 1rem;
+    color: #fff;
+    border-bottom: 1px solid #222;
+}
+
+.action-menu {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 0.5rem;
+}
+
+.action-menu:hover {
+    color: #fff;
 } 
+
+.expenses-chart {
+    background: #1E1E1E;
+    border-radius: 12px;
+    padding: 1.5rem;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 1rem 0;
+}
+
+.header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.date-filters {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.filter-select, .filter-date {
+    background: #1E1E1E;
+    border: 1px solid #333;
+    color: white;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    min-width: 150px;
+}
+
+.btn-filter {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-filter:hover {
+    background: #0056b3;
+}
+
+.filters .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.filters .form-field label {
+    font-size: 14px;
+    color: #888;
+    padding-right: 1rem;
+}
+
+.filters {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}

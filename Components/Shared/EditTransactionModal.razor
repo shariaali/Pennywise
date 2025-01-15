@@ -29,12 +29,14 @@
                             <option value="Outflow">Expense</option>
                             <option value="Inflow">Income</option>
                         </select>
+                        <ValidationMessage For="@(() => Transaction.Type)" />
                     </div>
 
                     <div class="form-field">
                         <label>Amount</label>
                         <input type="number" class="input-field" @bind="Transaction.Amount" 
                                placeholder="$XX.XX" />
+                        <ValidationMessage For="@(() => Transaction.Amount)" />
                     </div>
                 </div>
 
@@ -88,6 +90,7 @@
     [Parameter] public Transaction Transaction { get; set; }
     [Parameter] public EventCallback<Transaction> OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public decimal CurrentBalance { get; set; }
 
     private List<string> availableTags = new();
     private List<string> selectedTags = new();
@@ -128,6 +131,13 @@
     {
         try
         {
+            // Check balance for expense transactions
+            if (Transaction.Type == "Outflow" && Transaction.Amount > CurrentBalance)
+            {
+                await JS.InvokeVoidAsync("alert", $"Insufficient balance. Your current balance is {CurrentBalance:C2}");
+                return;
+            }
+
             // Only set the tags when submitting
             if (selectedTags.Any())
             {

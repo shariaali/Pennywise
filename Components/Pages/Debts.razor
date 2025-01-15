@@ -7,11 +7,26 @@
 @inject IDebtService DebtService
 @inject ITransactionService TransactionService
 @inject IJSRuntime JS
+@inject IFileExportService FileExportService
+@inject IUserService UserService
 
 <div class="debts-page">
     <div class="header">
-        <h3>Manage Debts</h3>
-        
+        <div class="header-left">
+            <h3>Manage Debts</h3>
+        </div>
+        <div class="actions">
+            <button class="sort-btn" @onclick="ToggleSort">
+                <i class="fas fa-sort"></i>
+                @(IsAscending ? "Oldest First" : "Newest First")
+            </button>
+            <button class="btn-export" @onclick="ExportToCsv">
+                Export CSV <i class="fas fa-download"></i>
+            </button>
+            <button class="action-btn btn-add" @onclick="AddDebt">
+                Add Debt <i class="fas fa-plus"></i>
+            </button>
+        </div>
     </div>
 
     <div class="stats-cards">
@@ -21,11 +36,11 @@
         </div>
         <div class="stat-card">
             <span class="label">Cleared Debts</span>
-            <span class="value positive">$@_clearedDebt.ToString("N2")</span>
+            <span class="value positive">@FormatAmount(_clearedDebt)</span>
         </div>
         <div class="stat-card">
             <span class="label">Pending Debts</span>
-            <span class="value negative">$@_pendingDebt.ToString("N2")</span>
+            <span class="value negative">@FormatAmount(_pendingDebt)</span>
         </div>
     </div>
 
@@ -38,13 +53,16 @@
             <option value="PENDING">Pending</option>
             <option value="CLEARED">Cleared</option>
         </select>
-        <input type="date" @bind="StartDate" class="filter-date" placeholder="Start Date"/>
-        <input type="date" @bind="EndDate" class="filter-date" placeholder="End Date"/>
+        <div class="form-field">
+            <label>Start Date</label>
+            <input type="date" @bind="StartDate" class="filter-date"/>
+        </div>
+        <div class="form-field">
+            <label>End Date</label>
+            <input type="date" @bind="EndDate" class="filter-date"/>
+        </div>
         <button class="btn-filter" @onclick="ApplyFiltersAndSearch">Apply Filters</button>
         <button class="btn-clear" @onclick="ClearFilters">Clear</button>
-        <button class="btn-export" @onclick="ExportToCsv">
-            Export CSV <i class="fas fa-download"></i>
-        </button>
     </div>
 
     <div class="transactions-table">
@@ -79,7 +97,7 @@
                                 </span>
                             </td>
                             <td>@debt.DueDate.ToShortDateString()</td>
-                            <td>$@debt.Amount.ToString("N2")</td>
+                            <td>@FormatAmount(debt.Amount)</td>
                             <td>
                                 @if (debt.Status == "PENDING")
                                 {
@@ -136,6 +154,10 @@
     private decimal _pendingDebt;
     private int _totalCount;
 
+    private string PreferredCurrency => UserService.PreferredCurrency;
+
+    private bool IsAscending { get; set; } = true;
+
     protected override async Task OnInitializedAsync()
     {
         await LoadDebtsAsync();
@@ -147,6 +169,14 @@
         {
             AllDebts = await DebtService.GetAllDebtsAsync();
             FilteredDebts = AllDebts;
+            if (IsAscending)
+            {
+                FilteredDebts = FilteredDebts.OrderBy(d => d.DueDate).ToList();
+            }
+            else
+            {
+                FilteredDebts = FilteredDebts.OrderByDescending(d => d.DueDate).ToList();
+            }
             
             var summary = DebtService.CalculateDebtSummary(AllDebts);
             _totalDebt = summary.totalDebt;
@@ -236,19 +266,13 @@
             
             foreach (var debt in debts)
             {
-                var line = $"{debt.Source},{debt.Amount:F2},{debt.DueDate:yyyy-MM-dd}," +
+                var line = $"{debt.Source},{FormatAmount(debt.Amount)},{debt.DueDate:yyyy-MM-dd}," +
                           $"{debt.Status},{debt.Notes},{debt.ClearedDate:yyyy-MM-dd}";
                 csvContent.AppendLine(line);
             }
 
-            // Convert to bytes
-            var bytes = Encoding.UTF8.GetBytes(csvContent.ToString());
-            
-            // Create file name with timestamp
             var fileName = $"debts_export_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
-            
-            // Trigger download using JS interop
-            await JS.InvokeVoidAsync("downloadFile", fileName, "text/csv", Convert.ToBase64String(bytes));
+            await FileExportService.ExportToCsvAsync(csvContent.ToString(), fileName);
         }
         catch (Exception ex)
         {
@@ -260,20 +284,18 @@
     {
         FilteredDebts = AllDebts;
 
-        // Apply source search
+        // Apply existing filters
         if (!string.IsNullOrEmpty(SearchSource))
         {
             FilteredDebts = FilteredDebts.Where(d => 
                 d.Source.Contains(SearchSource, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
-        // Apply status filter
         if (!string.IsNullOrEmpty(StatusFilter))
         {
             FilteredDebts = FilteredDebts.Where(d => d.Status == StatusFilter).ToList();
         }
 
-        // Apply date range filter
         if (StartDate.HasValue)
         {
             FilteredDebts = FilteredDebts.Where(d => d.DueDate >= StartDate.Value).ToList();
@@ -282,6 +304,16 @@
         if (EndDate.HasValue)
         {
             FilteredDebts = FilteredDebts.Where(d => d.DueDate <= EndDate.Value).ToList();
+        }
+
+        // Apply sorting
+        if (IsAscending)
+        {
+            FilteredDebts = FilteredDebts.OrderBy(d => d.DueDate).ToList();
+        }
+        else
+        {
+            FilteredDebts = FilteredDebts.OrderByDescending(d => d.DueDate).ToList();
         }
     }
 
@@ -292,5 +324,36 @@
         StartDate = null;
         EndDate = null;
         await LoadDebtsAsync();
+    }
+
+    private string GetCurrencySymbol()
+    {
+        switch (PreferredCurrency)
+        {
+            case "USD":
+                return "$";
+            case "NPR":
+                return "Rs.";
+            default:
+                return "$";  // Default to USD if no currency is selected
+        }
+    }
+
+    private string FormatAmount(decimal amount)
+    {
+        return $"{GetCurrencySymbol()} {amount:N2}";
+    }
+
+    private void ToggleSort()
+    {
+        IsAscending = !IsAscending;
+        if (IsAscending)
+        {
+            FilteredDebts = FilteredDebts.OrderBy(d => d.DueDate).ToList();
+        }
+        else
+        {
+            FilteredDebts = FilteredDebts.OrderByDescending(d => d.DueDate).ToList();
+        }
     }
 }
