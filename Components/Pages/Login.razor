@@ -5,13 +5,8 @@
 @inject NavigationManager Nav
 @inject IUserService UserService
 
-/* 
- * Main login container with two sections:
- * 1. Left side - Branding and marketing content
- * 2. Right side - Login form
- */
+
 <div class="login-container">
-    // Left section with logo and welcome message
     <div class="login-left">
         <img src="/images/logo.png" alt="PennyWise" class="logo" />
         <h1>Personal Finance<br />Simplified...</h1>
@@ -21,18 +16,14 @@
         </p>
     </div>
 
-    // Right section containing the login form
     <div class="login-right">
         <div class="login-form">
-            // Form header
             <h2>WELCOME BACK!</h2>
             <h3>Log In to your Account</h3>
 
-            <!-- Login form using Blazor's EditForm component with validation -->
             <EditForm Model="@Users" OnValidSubmit="HandleLogin">
                 <DataAnnotationsValidator />
 
-                // Username input field
                 <div class="form-group">
                     <label>Username</label>
                     <input type="text" class="form-control" @bind="Users.Username" 
@@ -40,7 +31,6 @@
                     <ValidationMessage For="@(() => Users.Username)" />
                 </div>
 
-                // Currency selection dropdown
                 <div class="form-group">
                     <label>Currency</label>
                     <select class="form-control currency-select" @bind="Users.PreferredCurrency">
@@ -53,8 +43,6 @@
                     </select>
                 </div>
 
-                /* Password input field with toggle visibility feature
-                   Uses a combination of input and button for show/hide functionality */
                 <div class="form-group">
                     <label>Password</label>
                     <div class="password-input">
@@ -68,7 +56,6 @@
                     <ValidationMessage For="@(() => Users.Password)" />
                 </div>
 
-                // Error message display section
                 @if (!string.IsNullOrEmpty(ErrorMessage))
                 {
                     <div class="alert alert-danger">@ErrorMessage</div>
@@ -81,23 +68,15 @@
 </div>
 
 @code {
-    // Private fields and properties for component state
     private string? ErrorMessage;
     private bool showPassword;
     public User Users { get; set; } = new();
 
-    // Toggles password visibility between plain text and masked characters
     private void TogglePasswordVisibility()
     {
         showPassword = !showPassword;
     }
 
-    /* 
-     * Handles the login form submission
-     * Attempts to log in the user and:
-     * - Redirects to home page on success
-     * - Shows error message on failure
-     */
     private async Task HandleLogin()
     {
         if (UserService.Login(Users))

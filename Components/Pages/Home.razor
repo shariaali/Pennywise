@@ -9,11 +9,10 @@
 @inject IJSRuntime JS
 @inject IDebtService DebtService
 
-// Main dashboard container
+
 <div class="dashboard-page">
     
-    /* Header section containing welcome message 
-       and date filter controls */
+   
     <div class="header-section">
         <h2>@_message</h2>
         <div class="date-filters">
@@ -29,7 +28,7 @@
         </div>
     </div>
 
-    // Statistics cards showing financial overview
+    
     <div class="stats-overview">
         <div class="stat-card">
             <span class="label">Balance</span>
@@ -57,8 +56,6 @@
         </div>
     </div>
 
-    /* Action buttons section for adding transactions 
-       and managing debts */
     <div class="action-buttons">
         <button class="action-btn income-btn" @onclick="AddIncome">
             <i class="fas fa-plus"></i>
@@ -83,10 +80,8 @@
         </button>
     </div>
 
-    // Main dashboard grid layout
+
     <div class="dashboard-grid">
-        /* Left section showing highest value 
-           transactions */
         <div class="transactions-section">
             <div class="section-header">
                 <h3>Highest Transactions</h3>
@@ -110,7 +105,7 @@
             </div>
         </div>
 
-        // Center section with spending chart
+     
         <div class="expenses-chart">
             <h3>Spending by Category</h3>
             <MudChart ChartType="ChartType.Donut" 
@@ -122,8 +117,7 @@
             </MudChart>
         </div>
 
-        /* Right section showing lowest value 
-           transactions */
+       
         <div class="transactions-section">
             <div class="section-header">
                 <h3>Lowest Transactions</h3>
@@ -149,8 +143,6 @@
 
         
 
-
-        // Pending debts table section
         <div class="pending-debts">
             <div class="section-header">
                 <h3>Pending debts</h3>
@@ -194,7 +186,6 @@
     
 </div>
 
-// Transaction modal component
 @if (showTransactionModal)
 {
     <TransactionModal 

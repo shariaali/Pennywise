@@ -3,14 +3,11 @@
 @inject ITransactionService TransactionService
 @inject ITagService TagService
 @inject IJSRuntime JS
-
-// Inject required services
 @inject ITransactionService TransactionService
 @inject ITagService TagService
 @inject IJSRuntime JS
 
-/* Modal structure for editing transactions
-   Contains a form with various input fields */
+
 <div class="modal-backdrop">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -19,8 +16,7 @@
                 <button class="close-button" @onclick="OnCancel">&times;</button>
             </div>
 
-            /* EditForm handles form submission and validation
-               using the Transaction model */
+            
             <EditForm Model="@Transaction" OnValidSubmit="HandleSubmit">
                 <DataAnnotationsValidator />
 
@@ -49,7 +45,7 @@
                     </div>
                 </div>
 
-                // Tags section - allows users to select and manage tags
+                
                 <div class="form-field">
                     <label>Tags</label>
                     <div class="tags-container">
@@ -68,7 +64,7 @@
                         }
                     </div>
                     
-                    // Custom tag input section
+                   
                     <div class="add-tag-container">
                         <input type="text" class="input-field" 
                                @bind="newTag"

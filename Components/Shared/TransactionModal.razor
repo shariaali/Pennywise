@@ -4,8 +4,7 @@
 @inject ITagService TagService
 @inject IJSRuntime JS
 
-/* Modal structure for adding/editing transactions
-   Contains a form with various input fields for transaction details */
+
 <div class="modal-backdrop">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -14,8 +13,7 @@
                 <button class="close-button" @onclick="OnCancel">&times;</button>
             </div>
 
-            /* EditForm handles form submission and validation
-               Uses the Transaction model for data binding */
+   
             <EditForm Model="@Transaction" OnValidSubmit="HandleSubmit">
                 <DataAnnotationsValidator />
 
@@ -82,6 +80,13 @@
                     <textarea class="input-field" @bind="Transaction.Note" 
                              placeholder="Add an optional memo about your transaction"></textarea>
                 </div>
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">
+                        @errorMessage
+                    </div>
+                }
 
                 <button type="submit" class="submit-btn">
                     ADD TRANSACTION
@@ -164,7 +169,7 @@
         {
             if (Transaction.Type == "Outflow" && Transaction.Amount > CurrentBalance)
             {
-                await JS.InvokeVoidAsync("alert", $"Insufficient balance. Your current balance is {CurrentBalance:C2}");
+                errorMessage = "Insufficient balance. Your current balance is " + CurrentBalance.ToString("C2");
                 return;
             }
 

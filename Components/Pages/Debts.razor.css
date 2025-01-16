@@ -287,3 +287,15 @@ td {
     gap: 0.5rem;
     transition: background-color 0.2s ease;
 }
+
+.alert {
+    padding: 12px 16px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+}
+
+.alert-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}

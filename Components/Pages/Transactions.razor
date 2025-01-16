@@ -11,7 +11,7 @@
 @inject IFileExportService FileExportService
 @inject IUserService UserService
 
-// Main container for the transactions page
+
 <div class="transactions-page">
     <div class="header">
         <div class="header-left">
@@ -31,11 +31,7 @@
         </div>
     </div>
 
-    /* Stats cards section showing:
-     * - Total number of transactions
-     * - Total income
-     * - Total expenses
-     */
+   
     <div class="stats-cards">
         <div class="stat-card">
             <span class="label">Total Transactions</span>
@@ -51,7 +47,7 @@
         </div>
     </div>
 
-    // Filter section for searching and filtering transactions
+  
     <div class="filters">
         <div class="search-box">
             <input type="text" @bind="SearchTitle" placeholder="Search by Title" />
@@ -81,7 +77,7 @@
         <button class="btn-clear" @onclick="ClearFilters">Clear</button>
     </div>
 
-    // Main transactions table
+
     <div class="transactions-table">
         <table>
             <thead>
@@ -180,7 +176,7 @@
     </div>
 </div>
 
-// Modal for adding new transactions
+
 @if (showTransactionModal)
 {
     <TransactionModal 
@@ -190,7 +186,7 @@
         CurrentBalance="_balance" />
 }
 
-// Modal for editing existing transactions
+
 @if (showEditModal)
 {
     <EditTransactionModal 
@@ -460,6 +456,11 @@
             await TransactionService.SaveTransactionAsync(transaction);
             showEditModal = false;
             await LoadTransactionsAsync();
+            
+            var sums = TransactionService.CalculateTransactionSums(FilteredTransactions);
+            _totalInflows = sums.totalInflows;
+            _totalOutflows = sums.totalOutflows;
+            StateHasChanged();
         }
         catch (Exception ex)
         {

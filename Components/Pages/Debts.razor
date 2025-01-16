@@ -10,10 +10,7 @@
 @inject IFileExportService FileExportService
 @inject IUserService UserService
 
-/* 
- * Main container for the debts page
- * Includes header section with action buttons
- */
+
 <div class="debts-page">
     <div class="header">
         <div class="header-left">
@@ -69,11 +66,14 @@
         <button class="btn-clear" @onclick="ClearFilters">Clear</button>
     </div>
 
-    /* 
-     * Main table displaying all debts
-     * Shows debt details and actions
-     */
+    
     <div class="transactions-table">
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger">
+                @errorMessage
+            </div>
+        }
         <table>
             <thead>
                 <tr>
@@ -138,7 +138,7 @@
     </div>
 </div>
 
-// Modal component for adding/editing debts
+
 @if (showDebtModal)
 {
     <DebtModal 
@@ -168,6 +168,8 @@
 
     private bool IsAscending { get; set; } = true;
 
+    private string errorMessage;
+
     /* 
      * Lifecycle method that loads debts when component initializes
      */
@@ -182,7 +184,8 @@
         try
         {
             AllDebts = await DebtService.GetAllDebtsAsync();
-            FilteredDebts = AllDebts;
+            FilteredDebts = new List<Debt>(AllDebts);
+            
             if (IsAscending)
             {
                 FilteredDebts = FilteredDebts.OrderBy(d => d.DueDate).ToList();
@@ -197,6 +200,8 @@
             _clearedDebt = summary.clearedDebt;
             _pendingDebt = summary.pendingDebt;
             _totalCount = summary.totalCount;
+            
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -223,10 +228,13 @@
             if (debt.DebtId == 0)
             {
                 await DebtService.AddDebtAsync(debt);
+                showDebtModal = false;
+                // Clear any existing filters when adding new debt
+                await ClearFilters();
+                // Reload debts and update UI
+                await LoadDebtsAsync();
+                StateHasChanged();
             }
-           
-            showDebtModal = false;
-            await LoadDebtsAsync();
         }
         catch (Exception ex)
         {
@@ -243,7 +251,8 @@
         }
         catch (Exception ex)
         {
-            await JS.InvokeVoidAsync("alert", $"Error clearing debt: {ex.Message}");
+            errorMessage = ex.Message;
+            StateHasChanged();
         }
     }
 
