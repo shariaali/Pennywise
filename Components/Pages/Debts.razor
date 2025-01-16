@@ -10,6 +10,10 @@
 @inject IFileExportService FileExportService
 @inject IUserService UserService
 
+/* 
+ * Main container for the debts page
+ * Includes header section with action buttons
+ */
 <div class="debts-page">
     <div class="header">
         <div class="header-left">
@@ -65,6 +69,10 @@
         <button class="btn-clear" @onclick="ClearFilters">Clear</button>
     </div>
 
+    /* 
+     * Main table displaying all debts
+     * Shows debt details and actions
+     */
     <div class="transactions-table">
         <table>
             <thead>
@@ -130,6 +138,7 @@
     </div>
 </div>
 
+// Modal component for adding/editing debts
 @if (showDebtModal)
 {
     <DebtModal 
@@ -139,6 +148,7 @@
 }
 
 @code {
+    // Private fields for storing debt data and state
     private List<Debt> AllDebts = new();
     private List<Debt> FilteredDebts = new();
     private string SearchSource = "";
@@ -158,11 +168,15 @@
 
     private bool IsAscending { get; set; } = true;
 
+    /* 
+     * Lifecycle method that loads debts when component initializes
+     */
     protected override async Task OnInitializedAsync()
     {
         await LoadDebtsAsync();
     }
 
+    // Loads all debts and calculates summary statistics
     private async Task LoadDebtsAsync()
     {
         try
@@ -190,6 +204,7 @@
         }
     }
 
+    // Handles adding a new debt
     private void AddDebt()
     {
         currentDebt = new Debt 
@@ -200,6 +215,7 @@
         showDebtModal = true;
     }
 
+    // Saves debt changes to the database
     private async Task HandleDebtSave(Debt debt)
     {
         try
@@ -254,6 +270,10 @@
         activeDropdown = activeDropdown == debtId ? null : debtId;
     }
 
+    /* 
+     * Export functionality
+     * Generates CSV file with filtered debt data
+     */
     private async Task ExportToCsv()
     {
         try
@@ -280,6 +300,7 @@
         }
     }
 
+    // Applies selected filters to the debt list
     private async Task ApplyFiltersAndSearch()
     {
         FilteredDebts = AllDebts;
@@ -326,6 +347,7 @@
         await LoadDebtsAsync();
     }
 
+    // Helper method to format currency amounts
     private string GetCurrencySymbol()
     {
         switch (PreferredCurrency)
@@ -344,6 +366,7 @@
         return $"{GetCurrencySymbol()} {amount:N2}";
     }
 
+    // Toggles sort order between ascending and descending
     private void ToggleSort()
     {
         IsAscending = !IsAscending;

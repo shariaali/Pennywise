@@ -9,6 +9,7 @@
     </div>
     
     <nav class="nav-menu">
+        <!-- Navigation links for different sections -->
         <a href="/home" class="nav-item @(GetActiveClass("/home"))">
             <img src="/images/icons/dashboard.png" class="nav-icon" alt="dashboard" />
             <span>Dashboard</span>
@@ -25,6 +26,7 @@
     </nav>
     
     <div class="logout-container">
+        <!-- Logout button that triggers confirmation dialog -->
         <button @onclick="ShowLogoutConfirmation" class="nav-item logout-button">
             <img src="/images/icons/logout.png" class="nav-icon" alt="logout" />
             <span>Logout</span>
@@ -32,7 +34,7 @@
     </div>
 </div>
 
-@if (showLogoutDialog)
+@if (showLogoutDialog) // Check if the logout confirmation dialog should be shown
 {
     <div class="modal-backdrop" @onclick="HideLogoutConfirmation">
         <div class="modal-dialog" @onclick:stopPropagation="true">
@@ -42,11 +44,11 @@
                     <button class="close-button" @onclick="HideLogoutConfirmation">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to logout?</p>
+                    <p>Are you sure you want to logout?</p> <!-- Confirmation message -->
                 </div>
                 <div class="modal-footer">
-                    <button class="btn-secondary" @onclick="HideLogoutConfirmation">No</button>
-                    <button class="btn-primary" @onclick="Logout">Yes</button>
+                    <button class="btn-secondary" @onclick="HideLogoutConfirmation">No</button> <!-- Cancel logout -->
+                    <button class="btn-primary" @onclick="Logout">Yes</button> <!-- Confirm logout -->
                 </div>
             </div>
         </div>
@@ -54,31 +56,36 @@
 }
 
 @code {
-    private bool showLogoutDialog = false;
+    private bool showLogoutDialog = false; // State to track visibility of logout dialog
 
+    // Method to get the active class for the current navigation link
     private string GetActiveClass(string href)
     {
-        var currentUrl = NavigationManager.Uri;
-        var baseUri = NavigationManager.BaseUri;
-        var relativePath = currentUrl.Substring(baseUri.Length).TrimEnd('/');
+        var currentUrl = NavigationManager.Uri; // Get the current URL
+        var baseUri = NavigationManager.BaseUri; // Get the base URI
+        var relativePath = currentUrl.Substring(baseUri.Length).TrimEnd('/'); // Extract relative path
         
+        // Return "active" class if the current path matches the href
         return relativePath.Equals(href.TrimEnd('/'), StringComparison.OrdinalIgnoreCase) ? "active" : "";
     }
 
+    // Method to show the logout confirmation dialog
     private void ShowLogoutConfirmation()
     {
-        showLogoutDialog = true;
+        showLogoutDialog = true; // Set dialog visibility to true
     }
 
+    // Method to hide the logout confirmation dialog
     private void HideLogoutConfirmation()
     {
-        showLogoutDialog = false;
+        showLogoutDialog = false; // Set dialog visibility to false
     }
 
+    // Method to handle user logout
     private void Logout()
     {
-        UserService.Logout();
-        showLogoutDialog = false;
-        NavigationManager.NavigateTo("/login");
+        UserService.Logout(); // Call the logout service
+        showLogoutDialog = false; // Hide the dialog after logout
+        NavigationManager.NavigateTo("/login"); // Redirect to login page
     }
 }

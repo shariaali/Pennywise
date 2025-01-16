@@ -1,14 +1,18 @@
-﻿@page "/"
+﻿// Route for the root URL
+@page "/"
+
+// Import necessary namespaces
 @using Pennywise.Model
+
+// Inject navigation service
 @inject NavigationManager Nav
 
 @code{
-    /*[CascadingParameter]
-    private GlobalState _globalState { get; set; }*/
-
+    /* OnInitialized is called when the component is first initialized
+       This method redirects users to the login page */
     protected override void OnInitialized()
     {
-
+        // Redirect to login page
         Nav.NavigateTo("/login");
     }
 }

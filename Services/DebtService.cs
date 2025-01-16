@@ -3,8 +3,10 @@ using Pennywise.Services.Interfaces;
 
 namespace Pennywise.Services
 {
+    // Service class responsible for managing debt-related operations
     public class DebtService : IDebtService
     {
+        // File path for storing debts in CSV format
         private readonly string _debtsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "debts.csv");
         private readonly ITransactionService _transactionService;
@@ -14,6 +16,10 @@ namespace Pennywise.Services
             _transactionService = transactionService;
         }
 
+        /*
+         * Retrieves all debts from the CSV file
+         * Returns an empty list if file doesn't exist or on error
+         */
         public async Task<List<Debt>> GetAllDebtsAsync()
         {
             try
@@ -52,6 +58,7 @@ namespace Pennywise.Services
             }
         }
 
+        // Creates a new debt and corresponding transaction
         public async Task<Debt> AddDebtAsync(Debt debt)
         {
             var debts = await GetAllDebtsAsync();
@@ -76,6 +83,13 @@ namespace Pennywise.Services
             return debt;
         }
 
+        /*
+         * Clears a debt by creating a clearing transaction
+         * Throws exception if:
+         * - Debt not found
+         * - Already cleared
+         * - Insufficient balance
+         */
         public async Task<Debt> ClearDebtAsync(int debtId, decimal clearingAmount)
         {
             var debts = await GetAllDebtsAsync();
@@ -116,6 +130,7 @@ namespace Pennywise.Services
             return debt;
         }
 
+        // Internal method to save debts to CSV file
         private async Task SaveDebtsToFile(List<Debt> debts)
         {
             try
@@ -166,6 +181,7 @@ namespace Pennywise.Services
             }
         }
 
+        // Retrieves a single debt by ID
         public async Task<Debt> GetDebtByIdAsync(int id)
         {
             var debts = await GetAllDebtsAsync();
@@ -177,6 +193,11 @@ namespace Pennywise.Services
             return debt;
         }
 
+        /*
+         * Deletes a debt and its associated transactions:
+         * - Debt creation transaction
+         * - Debt clearing transaction (if exists)
+         */
         public async Task DeleteDebtAsync(int id)
         {
             try
@@ -242,6 +263,7 @@ namespace Pennywise.Services
             }
         }
 
+        // Filters debts based on date range, status, and source
         public async Task<List<Debt>> FilterDebtsAsync(DateTime? startDate, DateTime? endDate, string status, string source)
         {
             var debts = await GetAllDebtsAsync();
@@ -254,6 +276,7 @@ namespace Pennywise.Services
             ).ToList();
         }
 
+        // Searches debts by source name (case-insensitive)
         public async Task<List<Debt>> SearchDebtsBySourceAsync(string source)
         {
             if (string.IsNullOrWhiteSpace(source))
@@ -263,6 +286,13 @@ namespace Pennywise.Services
             return debts.Where(d => d.Source.Contains(source, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
+        /*
+         * Calculates debt summary statistics:
+         * - Total debt amount
+         * - Cleared debt amount
+         * - Pending debt amount
+         * - Total number of debts
+         */
         public (decimal totalDebt, decimal clearedDebt, decimal pendingDebt, int totalCount) CalculateDebtSummary(List<Debt> debts)
         {
             var totalDebt = debts.Sum(d => d.Amount);

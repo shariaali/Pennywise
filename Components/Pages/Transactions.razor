@@ -11,6 +11,7 @@
 @inject IFileExportService FileExportService
 @inject IUserService UserService
 
+// Main container for the transactions page
 <div class="transactions-page">
     <div class="header">
         <div class="header-left">
@@ -30,6 +31,11 @@
         </div>
     </div>
 
+    /* Stats cards section showing:
+     * - Total number of transactions
+     * - Total income
+     * - Total expenses
+     */
     <div class="stats-cards">
         <div class="stat-card">
             <span class="label">Total Transactions</span>
@@ -45,6 +51,7 @@
         </div>
     </div>
 
+    // Filter section for searching and filtering transactions
     <div class="filters">
         <div class="search-box">
             <input type="text" @bind="SearchTitle" placeholder="Search by Title" />
@@ -74,6 +81,7 @@
         <button class="btn-clear" @onclick="ClearFilters">Clear</button>
     </div>
 
+    // Main transactions table
     <div class="transactions-table">
         <table>
             <thead>
@@ -172,6 +180,7 @@
     </div>
 </div>
 
+// Modal for adding new transactions
 @if (showTransactionModal)
 {
     <TransactionModal 
@@ -181,6 +190,7 @@
         CurrentBalance="_balance" />
 }
 
+// Modal for editing existing transactions
 @if (showEditModal)
 {
     <EditTransactionModal 
@@ -191,29 +201,38 @@
 }
 
 @code {
+    // Private fields for storing transaction data and state
     private List<Transaction> transactions = new List<Transaction>();
     private List<Transaction> FilteredTransactions = new List<Transaction>();
+    
+    /* Financial totals:
+     * - Total inflows (income)
+     * - Total outflows (expenses)
+     * - Current balance
+     */
     private decimal _totalInflows;
     private decimal _totalOutflows;
     private decimal _balance;
 
+    // Filter state variables
     private string SearchTitle;
     private string FilterType;
     private string FilterTags;
     private DateTime? StartDate;
     private DateTime? EndDate;
 
-
-    // For sorting
+    // Sorting preferences
     private string SortBy { get; set; } = "Date";
     private bool IsAscending { get; set; } = true;
 
+    // Predefined list of transaction tags
     private readonly List<string> _defaultTags = new List<string>
     {
         "Yearly", "Monthly", "Food", "Drinks", "Clothes", "Gadgets",
         "Miscellaneous", "Fuel", "Rent", "EMI", "Party"
     };
 
+    // UI state variables
     private int? activeDropdown;
     private bool showTransactionModal;
     private Transaction currentTransaction = new();
@@ -222,6 +241,13 @@
 
     private string PreferredCurrency => UserService.PreferredCurrency;
 
+    /* Methods below handle:
+     * - Page initialization
+     * - Transaction CRUD operations
+     * - Filtering and sorting
+     * - CSV export
+     * - Currency formatting
+     */
     protected override async Task OnInitializedAsync()
     {
         try
@@ -229,7 +255,6 @@
             transactions = await TransactionService.LoadTransactionsAsync();
             FilteredTransactions = transactions;
             
-            // Calculate totals using the same method as Home page
             var sums = TransactionService.CalculateTransactionSums(transactions);
             _totalInflows = sums.totalInflows;
             _totalOutflows = sums.totalOutflows;
@@ -256,7 +281,6 @@
             Console.WriteLine($"Error loading transactions: {ex.Message}");
         }
     }
-
 
     private async Task NavigateToEditPage(int id)
     {
@@ -294,27 +318,23 @@
     {
         FilteredTransactions = transactions;
 
-        // Apply title search
         if (!string.IsNullOrEmpty(SearchTitle))
         {
             FilteredTransactions = FilteredTransactions.Where(t => 
                 t.Title.Contains(SearchTitle, StringComparison.OrdinalIgnoreCase)).ToList();
         }
 
-        // Apply type filter
         if (!string.IsNullOrEmpty(FilterType))
         {
             FilteredTransactions = FilteredTransactions.Where(t => t.Type == FilterType).ToList();
         }
 
-        // Apply tags filter
         if (!string.IsNullOrEmpty(FilterTags))
         {
             FilteredTransactions = FilteredTransactions.Where(t => 
                 t.Tags != null && t.Tags.Contains(FilterTags)).ToList();
         }
 
-        // Apply date range filter
         if (StartDate.HasValue)
         {
             FilteredTransactions = FilteredTransactions.Where(t => t.Date >= StartDate.Value).ToList();
@@ -325,24 +345,23 @@
             FilteredTransactions = FilteredTransactions.Where(t => t.Date <= EndDate.Value).ToList();
         }
 
-        // Update totals based on filtered transactions
         var sums = TransactionService.CalculateTransactionSums(FilteredTransactions);
         _totalInflows = sums.totalInflows;
         _totalOutflows = sums.totalOutflows;
     }
+
     private async Task ApplySorting()
     {
         if (IsAscending)
         {
-            // Apply ascending sort
             FilteredTransactions = await TransactionService.SortTransactionsAscending("date");
         }
         else
         {
-            // Apply descending sort
             FilteredTransactions = await TransactionService.SortTransactionsDescending("date");
         }
     }
+
     private async Task ClearFilters()
     {
         SearchTitle = "";
@@ -355,25 +374,23 @@
         await LoadTransactionsAsync();
     }
 
-
     private async Task DeleteTag(string tag)
-{
-    var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the tag '{tag}'?");
-    if (confirmed)
     {
-        try
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the tag '{tag}'?");
+        if (confirmed)
         {
-            await TagService.DeleteCustomTagAsync(tag);
-            // Refresh transactions to update tags
-            FilteredTransactions = await TransactionService.LoadTransactionsAsync();
-            StateHasChanged();
-        }
-        catch (Exception ex)
-        {
-            await JS.InvokeVoidAsync("alert", $"Error deleting tag: {ex.Message}");
+            try
+            {
+                await TagService.DeleteCustomTagAsync(tag);
+                FilteredTransactions = await TransactionService.LoadTransactionsAsync();
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                await JS.InvokeVoidAsync("alert", $"Error deleting tag: {ex.Message}");
+            }
         }
     }
-}
 
     private async Task ExportToCsv()
     {
@@ -381,7 +398,6 @@
         {
             var transactions = FilteredTransactions ?? await TransactionService.LoadTransactionsAsync();
             
-            // Create CSV content
             var csvContent = new StringBuilder();
             csvContent.AppendLine("Title,Amount,Type,Date,Tags,Note");
             
@@ -406,7 +422,7 @@
         currentTransaction = new Transaction 
         { 
             Date = DateTime.Today,
-            TransactionId = 0  // Ensure it's treated as a new transaction
+            TransactionId = 0
         };
         showTransactionModal = true;
     }
@@ -427,7 +443,6 @@
             showTransactionModal = false;
             await LoadTransactionsAsync();
             
-            // Refresh totals
             var sums = TransactionService.CalculateTransactionSums(FilteredTransactions);
             _totalInflows = sums.totalInflows;
             _totalOutflows = sums.totalOutflows;
@@ -469,11 +484,10 @@
             case "NPR":
                 return "Rs.";
             default:
-                return "$";  // Default to USD if no currency is selected
+                return "$";
         }
     }
 
-    // Helper to format amounts with the currency symbol
     private string FormatAmount(decimal amount)
     {
         return $"{GetCurrencySymbol()} {amount:N2}";

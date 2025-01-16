@@ -4,6 +4,8 @@
 @inject ITagService TagService
 @inject IJSRuntime JS
 
+/* Modal structure for adding/editing transactions
+   Contains a form with various input fields for transaction details */
 <div class="modal-backdrop">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -12,6 +14,8 @@
                 <button class="close-button" @onclick="OnCancel">&times;</button>
             </div>
 
+            /* EditForm handles form submission and validation
+               Uses the Transaction model for data binding */
             <EditForm Model="@Transaction" OnValidSubmit="HandleSubmit">
                 <DataAnnotationsValidator />
 
@@ -88,17 +92,30 @@
 </div>
 
 @code {
+    /* Parameters passed to the component
+       Transaction: The transaction model
+       OnSave: Callback for saving the transaction
+       OnCancel: Callback for canceling the modal
+       CurrentBalance: The current balance of the user */
     [Parameter] public Transaction Transaction { get; set; } = new();
     [Parameter] public EventCallback<Transaction> OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public decimal CurrentBalance { get; set; }
 
+    /* Private fields for managing tags and state
+       availableTags: List of all available tags
+       selectedTags: List of selected tags for the transaction
+       newTag: The new tag being added
+       errorMessage: The error message for form submission
+       _defaultTags: Predefined default tags that cannot be deleted */
     private List<string> availableTags = new();
     private List<string> selectedTags = new();
     private string newTag = "";
     private string errorMessage;
     private List<string> _defaultTags = new() { "Yearly", "Monthly", "Food", "Drinks","Clothes","Gadgets","Miscellaneous","Fuel","Rent","EMI","Party"};
 
+    /* Initializes the component by loading tags and setting default values
+       Called when the component is first initialized */
     protected override async Task OnInitializedAsync()
     {
         availableTags = await TagService.GetAllTagsAsync();
@@ -112,6 +129,8 @@
         }
     }
 
+    /* Handles toggling tags on/off for the transaction
+       Adds or removes a tag from the selectedTags list */
     private void ToggleTag(string tag)
     {
         if (selectedTags.Contains(tag))
@@ -122,6 +141,8 @@
         Transaction.Tags = string.Join(",", selectedTags);
     }
 
+    /* Adds a new custom tag to both available and selected tags
+       Called when the "Add" button is clicked */
     private async Task AddCustomTag()
     {
         if (!string.IsNullOrWhiteSpace(newTag))
@@ -134,6 +155,9 @@
         }
     }
 
+    /* Handles form submission
+       Validates balance for expense transactions
+       Invokes the OnSave callback if successful */
     private async Task HandleSubmit()
     {
         try
@@ -152,6 +176,9 @@
         }
     }
 
+    /* Handles deletion of custom tags
+       Shows confirmation dialog before deletion
+       Updates available and selected tags after deletion */
     private async Task DeleteCustomTag(string tag)
     {
         var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the tag '{tag}'?");

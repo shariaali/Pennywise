@@ -2,9 +2,11 @@
 @using Pennywise.Model
 @inject IJSRuntime JS
 
+// Modal backdrop container for the debt form
 <div class="modal-backdrop">
     <div class="modal-dialog">
         <div class="modal-content">
+            <!-- Header section with title and close button -->
             <div class="modal-header">
                 <h3>Add debt</h3>
                 <button class="close-button" @onclick="OnCancel">
@@ -12,9 +14,11 @@
                 </button>
             </div>
 
+            @* EditForm component for handling form submission and validation *@
             <EditForm Model="@Debt" OnValidSubmit="HandleSubmit">
                 <DataAnnotationsValidator />
 
+                <!-- Source of debt input field -->
                 <div class="form-field">
                     <label>Source of Debt:</label>
                     <input type="text" class="input-field" @bind="Debt.Source" 
@@ -22,6 +26,7 @@
                     <ValidationMessage For="@(() => Debt.Source)" />
                 </div>
 
+                <!-- Payment due date and amount input fields -->
                 <div class="form-row">
                     <div class="form-field">
                         <label>Payment Due Date:</label>
@@ -40,12 +45,14 @@
                     </div>
                 </div>
 
+                <!-- Optional notes textarea -->
                 <div class="form-field">
                     <label>Notes (Optional):</label>
                     <textarea class="input-field" @bind="Debt.Notes" 
                              placeholder="Add an optional memo about your debt"></textarea>
                 </div>
 
+                <!-- Form submit button -->
                 <div class="modal-footer">
                     <button type="submit" class="btn-primary">ADD DEBT</button>
                 </div>
@@ -55,10 +62,16 @@
 </div>
 
 @code {
+    // Component parameters for data binding and event callbacks
     [Parameter] public Debt Debt { get; set; } = new();
     [Parameter] public EventCallback<Debt> OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
 
+    /*
+     * Handles the form submission
+     * Validates the amount is greater than 0
+     * Invokes the OnSave callback if validation passes
+     */
     private async Task HandleSubmit()
     {
         if (Debt.Amount <= 0)

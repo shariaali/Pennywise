@@ -9,11 +9,18 @@ using Pennywise.Model;
 using Pennywise.Services.Interfaces;
 
 
+// Service class responsible for managing transaction-related operations
 public class TransactionService : ITransactionService
 {
+    // File path for storing transactions in CSV format
     private readonly string _transactionsFilePath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "transactions.csv");
 
+    /*
+     * Saves a transaction to the CSV file
+     * If it's a new transaction, assigns a new ID
+     * If it's an existing transaction, updates its properties
+     */
     public async Task SaveTransactionAsync(Transaction transaction)
     {
         try
@@ -54,7 +61,7 @@ public class TransactionService : ITransactionService
         }
     }
 
-
+    // Loads all transactions from the CSV file
     public async Task<List<Transaction>> LoadTransactionsAsync()
     {
         try
@@ -98,6 +105,13 @@ public class TransactionService : ITransactionService
             return new List<Transaction>();
         }
     }
+
+    /*
+     * Calculates various financial metrics:
+     * - Total inflows and outflows
+     * - Total debt and cleared debt
+     * - Remaining debt and current balance
+     */
     public (decimal totalInflows, decimal totalOutflows, decimal totalDebt, decimal totalClearedDebt, decimal remainingDebt, decimal balance, bool isSufficientBalance) CalculateTransactionSums(List<Transaction> transactions)
     {
         decimal totalInflows = 0;
@@ -132,6 +146,8 @@ public class TransactionService : ITransactionService
 
         return (totalInflows, totalOutflows, totalDebt, totalClearedDebt, remainingDebt, balance, isSufficientBalance);
     }
+
+    // Finds the highest and lowest transactions for each transaction type
     public (Transaction highestInflow, Transaction lowestInflow, Transaction highestOutflow, Transaction lowestOutflow, Transaction highestDebt, Transaction lowestDebt) GetTransactionExtremes(List<Transaction> transactions)
     {
         var highestInflow = transactions.Where(t => t.Type == "Inflow").OrderByDescending(t => t.Amount).FirstOrDefault();
@@ -144,6 +160,7 @@ public class TransactionService : ITransactionService
         return (highestInflow, lowestInflow, highestOutflow, lowestOutflow, highestDebt, lowestDebt);
     }
 
+    // Deletes a transaction by its ID and updates related debt if necessary
     public async Task DeleteTransactionAsync(int transactionId)
     {
         try
@@ -170,11 +187,19 @@ public class TransactionService : ITransactionService
         }
     }
 
+    // Searches transactions by title (case-insensitive)
     public async Task<List<Transaction>> SearchTransactionsByTitleAsync(string title)
     {
         var transactions = await LoadTransactionsAsync();
         return transactions.Where(t => t.Title.Contains(title, StringComparison.OrdinalIgnoreCase)).ToList();
     }
+
+    /*
+     * Filters transactions based on multiple criteria:
+     * - Date range
+     * - Transaction type
+     * - Tags
+     */
     public async Task<List<Transaction>> FilterTransactionsAsync(DateTime? startDate, DateTime? endDate, string type, string tags)
     {
         var transactions = await LoadTransactionsAsync();
@@ -185,6 +210,8 @@ public class TransactionService : ITransactionService
             (string.IsNullOrEmpty(tags) || t.Tags.Contains(tags, StringComparison.OrdinalIgnoreCase))
         ).ToList();
     }
+
+    // Generic sorting method that supports both ascending and descending order
     public async Task<List<Transaction>> SortTransactionsAsync(string sortBy, bool isAscending)
     {
         var transactions = await LoadTransactionsAsync();
@@ -194,6 +221,8 @@ public class TransactionService : ITransactionService
             _ => transactions // Default: no sorting
         };
     }
+
+    // Sorts transactions by date in ascending order
     public async Task<List<Transaction>> SortTransactionsAscending(string sortBy)
     {
         var transactions = await LoadTransactionsAsync();
@@ -201,6 +230,8 @@ public class TransactionService : ITransactionService
         // Sort transactions in ascending order by date
         return transactions.OrderBy(t => t.Date).ToList();
     }
+
+    // Sorts transactions by date in descending order
     public async Task<List<Transaction>> SortTransactionsDescending(string sortBy)
     {
         var transactions = await LoadTransactionsAsync();
@@ -208,6 +239,7 @@ public class TransactionService : ITransactionService
         return transactions.OrderByDescending(t => t.Date).ToList();
     }
 
+    // Retrieves a single transaction by its ID
     public async Task<Transaction> GetTransactionAsync(int id)
     {
         var transactions = await LoadTransactionsAsync();
@@ -215,6 +247,11 @@ public class TransactionService : ITransactionService
                ?? throw new Exception($"Transaction with ID {id} not found");
     }
 
+    /*
+     * Private helper method to save transactions to CSV file
+     * Creates the directory if it doesn't exist
+     * Handles special characters in tags and notes by replacing commas with ||
+     */
     private async Task SaveTransactionsToFile(List<Transaction> transactions)
     {
         try

@@ -2,28 +2,37 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 
-@* Required *@
+// MudBlazor service providers for UI components
 <MudThemeProvider />
 <MudPopoverProvider />
 <MudDialogProvider />
 <MudSnackbarProvider />
 
 @{
+    // Check if current page is login page
     var isLoginPage = Navigation.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase);
+    // Set container class based on page type
     var containerClass = isLoginPage ? "layout-container login-page" : "layout-container";
 }
 
 <div class="@containerClass">
     @if (!isLoginPage)
     {
+        /* 
+         * Only show navigation menu if not on login page
+         * This keeps the login page clean without navigation
+         */
         <NavMenu />
     }
+    // Main content area where page content will be rendered
     <main class="main-content">
         @Body
     </main>
 </div>
 
 @code {
+    // Property to check if current page is login page
+    // Used for conditional rendering and styling
     bool IsLoginPage => Navigation.Uri.Contains("/login", StringComparison.OrdinalIgnoreCase);
 }
 

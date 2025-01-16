@@ -4,6 +4,13 @@
 @inject ITagService TagService
 @inject IJSRuntime JS
 
+// Inject required services
+@inject ITransactionService TransactionService
+@inject ITagService TagService
+@inject IJSRuntime JS
+
+/* Modal structure for editing transactions
+   Contains a form with various input fields */
 <div class="modal-backdrop">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -12,6 +19,8 @@
                 <button class="close-button" @onclick="OnCancel">&times;</button>
             </div>
 
+            /* EditForm handles form submission and validation
+               using the Transaction model */
             <EditForm Model="@Transaction" OnValidSubmit="HandleSubmit">
                 <DataAnnotationsValidator />
 
@@ -40,6 +49,7 @@
                     </div>
                 </div>
 
+                // Tags section - allows users to select and manage tags
                 <div class="form-field">
                     <label>Tags</label>
                     <div class="tags-container">
@@ -57,6 +67,8 @@
                             </div>
                         }
                     </div>
+                    
+                    // Custom tag input section
                     <div class="add-tag-container">
                         <input type="text" class="input-field" 
                                @bind="newTag"
@@ -87,17 +99,22 @@
 </div>
 
 @code {
+    // Component parameters
     [Parameter] public Transaction Transaction { get; set; }
     [Parameter] public EventCallback<Transaction> OnSave { get; set; }
     [Parameter] public EventCallback OnCancel { get; set; }
     [Parameter] public decimal CurrentBalance { get; set; }
 
+    // Private fields for managing tags
     private List<string> availableTags = new();
     private List<string> selectedTags = new();
     private string newTag = "";
     private string errorMessage;
+    // Predefined default tags that cannot be deleted
     private List<string> _defaultTags = new() { "Yearly", "Monthly", "Food", "Drinks","Clothes","Gadgets","Miscellaneous","Fuel","Rent","EMI","Party"};
 
+    /* Initializes the component by loading tags
+       and setting up selected tags from the transaction */
     protected override async Task OnInitializedAsync()
     {
         availableTags = await TagService.GetAllTagsAsync();
@@ -107,6 +124,7 @@
         }
     }
 
+    // Adds a new custom tag to both available and selected tags
     private async Task AddCustomTag()
     {
         if (!string.IsNullOrWhiteSpace(newTag))
@@ -119,6 +137,7 @@
         }
     }
 
+    // Toggles tag selection status
     private void ToggleTag(string tag)
     {
         if (selectedTags.Contains(tag))
@@ -127,6 +146,8 @@
             selectedTags.Add(tag);
     }
 
+    /* Handles form submission
+       Validates balance for expenses and updates tags */
     private async Task HandleSubmit()
     {
         try
@@ -151,6 +172,8 @@
         }
     }
 
+    /* Handles deletion of custom tags
+       Includes confirmation and error handling */
     private async Task DeleteCustomTag(string tag)
     {
         var confirmed = await JS.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the tag '{tag}'?");
